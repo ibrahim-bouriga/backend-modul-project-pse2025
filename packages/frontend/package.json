@@ -1,0 +1,14 @@
+{
+  "name": "frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx http-server ./public -p 3000 -o",
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "http-server": "^14.1.1",
+    "typescript": "^5.3.3"
+  }
+}
