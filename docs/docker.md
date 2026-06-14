@@ -4,8 +4,8 @@
 
 | Profile | Services started | Use when |
 |---|---|---|
-| `dev` | postgres, mosquitto | Developing locally — run backend/frontend natively, just need the infrastructure |
-| `prod` | postgres, mosquitto, backend, frontend | Running the full stack (e.g. staging, production, or a full local smoke test) |
+| `dev` | postgres, mosquitto, minio | Developing locally — run backend/frontend natively, just need the infrastructure |
+| `prod` | postgres, mosquitto, minio, backend, frontend | Running the full stack (e.g. staging, production, or a full local smoke test) |
 
 ## Commands
 
