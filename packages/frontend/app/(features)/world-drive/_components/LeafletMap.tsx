@@ -1,10 +1,8 @@
 "use client";
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { useEffect, useRef } from "react";
+import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css";
 
-// Leaflet's default icons break in webpack environments — override with CDN paths
 const carIcon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
@@ -25,53 +23,71 @@ interface LeafletMapProps {
   trail: CarPosition[];
 }
 
-function MapPanner({ lat, lng }: { lat: number; lng: number }) {
+// Imperative car marker + map follow — bypasses React reconciliation for smooth 60fps updates
+function CarController({ position }: { position: CarPosition | null }) {
   const map = useMap();
+  const markerRef = useRef<L.Marker | null>(null);
+
   useEffect(() => {
-    map.setView([lat, lng], map.getZoom());
-  }, [map, lat, lng]);
+    markerRef.current = L.marker([48.7778, 9.18], { icon: carIcon })
+      .bindPopup("<strong>PSECars Super Car</strong>")
+      .addTo(map);
+    return () => {
+      markerRef.current?.remove();
+      markerRef.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    if (!position || !markerRef.current) return;
+    const latlng: L.LatLngTuple = [position.lat, position.lng];
+    markerRef.current.setLatLng(latlng);
+    // animate:false so map tracks the interpolated position exactly each frame
+    map.setView(latlng, map.getZoom(), { animate: false });
+  }, [map, position]);
+
+  return null;
+}
+
+// Imperative polyline — bypasses react-leaflet v5 / Tailwind CSS compatibility issues
+function TrailPolyline({ trail }: { trail: CarPosition[] }) {
+  const map = useMap();
+  const polylineRef = useRef<L.Polyline | null>(null);
+
+  useEffect(() => {
+    polylineRef.current = L.polyline([], {
+      color: "#f97316",
+      weight: 5,
+      opacity: 0.9,
+      renderer: L.canvas(),
+    }).addTo(map);
+    return () => {
+      polylineRef.current?.remove();
+      polylineRef.current = null;
+    };
+  }, [map]);
+
+  useEffect(() => {
+    if (!polylineRef.current || trail.length < 2) return;
+    polylineRef.current.setLatLngs(trail.map((p) => [p.lat, p.lng]));
+  }, [trail]);
+
   return null;
 }
 
 export default function LeafletMap({ position, trail }: LeafletMapProps) {
-  const center: [number, number] = position
-    ? [position.lat, position.lng]
-    : [48.7778, 9.1800]; // Default: Stuttgart Schlossplatz
-
-  const trailCoords: [number, number][] = trail.map((p) => [p.lat, p.lng]);
-
   return (
     <MapContainer
-      center={center}
+      center={[48.7778, 9.18]}
       zoom={14}
-      style={{ height: "500px", width: "100%", borderRadius: "12px" }}
+      style={{ height: "70vh", minHeight: "500px", width: "100%", borderRadius: "12px" }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {trailCoords.length > 1 && (
-        <Polyline
-          positions={trailCoords}
-          pathOptions={{ color: "#f97316", weight: 4, opacity: 0.85 }}
-        />
-      )}
-      {position && (
-        <>
-          <MapPanner lat={position.lat} lng={position.lng} />
-          <Marker position={[position.lat, position.lng]} icon={carIcon}>
-            <Popup>
-              <strong>PSECars Super Car</strong>
-              <br />
-              {position.lat.toFixed(5)}, {position.lng.toFixed(5)}
-              <br />
-              <span style={{ fontSize: "0.8em", color: "#888" }}>
-                {new Date(position.timestamp).toLocaleTimeString()}
-              </span>
-            </Popup>
-          </Marker>
-        </>
-      )}
+      <TrailPolyline trail={trail} />
+      <CarController position={position} />
     </MapContainer>
   );
 }

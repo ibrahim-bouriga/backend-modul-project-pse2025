@@ -2,7 +2,7 @@ import WorldMap from "./_components/WorldMap";
 
 export default function WorldDrivePage() {
   return (
-    <div className="max-w-5xl mx-auto px-8 py-16 space-y-10">
+    <div className="max-w-screen-2xl mx-auto px-8 py-16 space-y-10">
       <div>
         <p className="text-xs font-semibold tracking-[0.3em] uppercase text-zinc-500 mb-3">
           Feature Module
