@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -20,6 +20,11 @@ export interface CarPosition {
   timestamp: string;
 }
 
+interface LeafletMapProps {
+  position: CarPosition | null;
+  trail: CarPosition[];
+}
+
 function MapPanner({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
@@ -28,21 +33,26 @@ function MapPanner({ lat, lng }: { lat: number; lng: number }) {
   return null;
 }
 
-export default function LeafletMap({ position }: { position: CarPosition | null }) {
+export default function LeafletMap({ position, trail }: LeafletMapProps) {
   const center: [number, number] = position
     ? [position.lat, position.lng]
-    : [48.7758, 9.1829]; // Default: Stuttgart
+    : [48.7778, 9.1800]; // Default: Stuttgart Schlossplatz
+
+  const trailCoords: [number, number][] = trail.map((p) => [p.lat, p.lng]);
 
   return (
     <MapContainer
       center={center}
-      zoom={6}
+      zoom={14}
       style={{ height: "500px", width: "100%", borderRadius: "12px" }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {trailCoords.length > 1 && (
+        <Polyline positions={trailCoords} color="#ef4444" weight={3} opacity={0.7} />
+      )}
       {position && (
         <>
           <MapPanner lat={position.lat} lng={position.lng} />

@@ -9,12 +9,14 @@ const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
 const WORLD_DRIVE_URL =
   process.env.NEXT_PUBLIC_WORLD_DRIVE_URL ?? "http://localhost:4001";
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 1000;
+const MAX_TRAIL_LENGTH = 200;
 
 type Status = "connecting" | "live" | "error";
 
 export default function WorldMap() {
   const [position, setPosition] = useState<CarPosition | null>(null);
+  const [trail, setTrail] = useState<CarPosition[]>([]);
   const [status, setStatus] = useState<Status>("connecting");
 
   useEffect(() => {
@@ -28,6 +30,7 @@ export default function WorldMap() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as CarPosition;
         setPosition(data);
+        setTrail((prev) => [...prev.slice(-(MAX_TRAIL_LENGTH - 1)), data]);
         setStatus("live");
       } catch {
         setStatus("error");
@@ -67,7 +70,7 @@ export default function WorldMap() {
           title={status}
         />
       </div>
-      <LeafletMap position={position} />
+      <LeafletMap position={position} trail={trail} />
     </div>
   );
 }
