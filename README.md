@@ -65,19 +65,50 @@ Each microservice is an independent Express server with its own port, database c
 | Mosquitto  | MQTT broker             | 1883 (TCP), 9001 (WebSocket) |
 | MinIO      | Object / file storage   | 9000 (API), 9002 (Web UI)   |
 
-## Quick start
+## Development workflow
+
+### Recommended: run everything locally
+
+The easiest way to develop is to start infra in Docker and run application code directly on your machine — no container rebuilds on every change.
 
 ```sh
-cp .env.example .env
-docker compose --profile dev up -d        # start infra only (DB, MQTT, MinIO)
-cd packages/backend && npm run dev        # run your microservice locally
+cp .env.example .env                       # first time only
+docker compose --profile dev up -d         # start Postgres, MQTT, MinIO
+npm run dev                                # start backend + frontend in parallel
 ```
 
-Or run the full stack in containers:
+`npm run dev` at the repo root runs both `packages/backend` and `packages/frontend` concurrently:
+
+| Service  | URL                    |
+|----------|------------------------|
+| Frontend | http://localhost:3000  |
+| Backend  | http://localhost:4000  |
+
+To run only one at a time:
+
+```sh
+npm run dev:backend    # backend only  (port 4000)
+npm run dev:frontend   # frontend only (port 3000)
+```
+
+### Override the backend URL (optional)
+
+Create `packages/frontend/.env.local` to point at a different backend:
+
+```bash
+NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
+```
+
+Defaults to `http://localhost:4000` when not set.
+
+
+### Production: full Docker stack
 
 ```sh
 docker compose --profile prod up --build -d
 ```
+
+This builds and runs every service (frontend, backend, infra) in containers. Use this to verify the production setup, not for day-to-day development.
 
 ## Documentation
 
