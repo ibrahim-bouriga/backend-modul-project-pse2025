@@ -18,6 +18,21 @@ services:
         condition: service_started
     restart: unless-stopped
 
+  service-world-drive:
+    profiles: ["prod"]
+    build:
+      context: ./packages/service-world-drive
+      dockerfile: Dockerfile
+    ports:
+      - "${WORLD_DRIVE_PORT:-4001}:4001"
+    environment:
+      PORT: "4001"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+    depends_on:
+      - mosquitto
+    restart: unless-stopped
+
   frontend:
     profiles: ["prod"]
     build:
