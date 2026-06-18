@@ -51,7 +51,10 @@ export default function LeafletMap({ position, trail }: LeafletMapProps) {
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {trailCoords.length > 1 && (
-        <Polyline positions={trailCoords} color="#ef4444" weight={3} opacity={0.7} />
+        <Polyline
+          positions={trailCoords}
+          pathOptions={{ color: "#f97316", weight: 4, opacity: 0.85 }}
+        />
       )}
       {position && (
         <>
