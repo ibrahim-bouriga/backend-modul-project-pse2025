@@ -1,4 +1,4 @@
-export default function BackendHealthCheck() {
+export default function ExampleComponent() {
   
   return (
     <div>
