@@ -13,28 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Next.js Docker Example - Standalone Mode",
-  description:
-    "A production-ready example demonstrating how to Dockerize Next.js applications using standalone mode.",
-  keywords: [
-    "Next.js",
-    "Docker",
-    "standalone mode",
-    "containerization",
-    "React",
-    "Node.js",
-  ],
+  title: "MyPSECar · PSE 2025",
+  description: "Next.js frontend for the PSE 2025 project (MyPSECar).",
+  keywords: ["MyPSECar", "PSE 2025", "Next.js", "React", "MQTT", "REST API"],
   openGraph: {
-    title: "Next.js Docker Example - Standalone Mode",
-    description:
-      "A production-ready example demonstrating how to Dockerize Next.js applications using standalone mode.",
+    title: "MyPSECar · PSE 2025",
+    description: "Next.js frontend for the PSE 2025 project (MyPSECar).",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Next.js Docker Example - Standalone Mode",
-    description:
-      "A production-ready example demonstrating how to Dockerize Next.js applications using standalone mode.",
+    title: "MyPSECar · PSE 2025",
+    description: "Next.js frontend for the PSE 2025 project (MyPSECar).",
   },
 };
 
