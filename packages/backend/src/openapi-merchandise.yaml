@@ -597,4 +597,3 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-# Made with Bob

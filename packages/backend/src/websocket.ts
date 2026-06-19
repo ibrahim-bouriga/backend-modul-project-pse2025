@@ -87,9 +87,8 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
   console.log('[WebSocket Bridge] Setting up MQTT to WebSocket bridge');
 
   // Bridge Super Car GPS updates
-  mqttClient.subscribe(MQTT_TOPICS.SUPERCAR_GPS, (message) => {
+  mqttClient.subscribe(MQTT_TOPICS.SUPERCAR_GPS, (topic, payload) => {
     try {
-      const payload = JSON.parse(message.toString());
       console.log('[WebSocket Bridge] Broadcasting super car GPS to room: supercar');
       
       // Broadcast to 'supercar' room
@@ -98,7 +97,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
       // Also broadcast to general 'world-drive' room
       io.to('world-drive').emit('supercar:gps', payload);
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing super car GPS:', error);
+      console.error('[WebSocket Bridge] Error broadcasting super car GPS:', error);
     }
   });
 
@@ -111,7 +110,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
       io.to('supercar').emit('supercar:status', payload);
       io.to('world-drive').emit('supercar:status', payload);
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing super car status:', error);
+      console.error('[WebSocket Bridge] Error broadcasting super car status:', error);
     }
   });
 
@@ -137,7 +136,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
         ...payload,
       });
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing vehicle GPS:', error);
+      console.error('[WebSocket Bridge] Error broadcasting vehicle GPS:', error);
     }
   });
 
@@ -158,7 +157,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
         ...payload,
       });
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing vehicle fuel:', error);
+      console.error('[WebSocket Bridge] Error broadcasting vehicle fuel:', error);
     }
   });
 
@@ -179,7 +178,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
         ...payload,
       });
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing vehicle speed:', error);
+      console.error('[WebSocket Bridge] Error broadcasting vehicle speed:', error);
     }
   });
 
@@ -200,7 +199,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
         ...payload,
       });
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing vehicle status:', error);
+      console.error('[WebSocket Bridge] Error broadcasting vehicle status:', error);
     }
   });
 
@@ -212,7 +211,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
       
       io.to('configurator').emit('configurator:control', payload);
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing configurator control:', error);
+      console.error('[WebSocket Bridge] Error broadcasting configurator control:', error);
     }
   });
 
@@ -224,7 +223,7 @@ function setupMQTTBridge(mqttClient: MQTTClientWrapper, io: SocketIOServer): voi
       
       io.to('configurator').emit('configurator:telemetry', payload);
     } catch (error) {
-      console.error('[WebSocket Bridge] Error parsing configurator telemetry:', error);
+      console.error('[WebSocket Bridge] Error broadcasting configurator telemetry:', error);
     }
   });
 
