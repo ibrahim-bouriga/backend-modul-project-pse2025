@@ -7,12 +7,15 @@ import YAML from 'yaml';
 // Load OpenAPI specs from YAML files
 const carsApiPath = join(process.cwd(), 'src/openapi-cars.yaml');
 const merchandiseApiPath = join(process.cwd(), 'src/openapi-merchandise.yaml');
+const worlddriveApiPath = join(process.cwd(), 'src/openapi-worlddrive.yaml');
 
 const carsApiContent = readFileSync(carsApiPath, 'utf8');
 const merchandiseApiContent = readFileSync(merchandiseApiPath, 'utf8');
+const worlddriveApiContent = readFileSync(worlddriveApiPath, 'utf8');
 
 const carsSpec = YAML.parse(carsApiContent);
 const merchandiseSpec = YAML.parse(merchandiseApiContent);
+const worlddriveSpec = YAML.parse(worlddriveApiContent);
 
 export function setupSwagger(app: Express): void {
   // Serve Cars API documentation at /api-docs/cars
@@ -25,6 +28,12 @@ export function setupSwagger(app: Express): void {
   app.use('/api-docs/merchandise', swaggerUi.serveFiles(merchandiseSpec), swaggerUi.setup(merchandiseSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'PSE 2025 Merchandise API',
+  }));
+  
+  // Serve World Drive API documentation at /api-docs/worlddrive
+  app.use('/api-docs/worlddrive', swaggerUi.serveFiles(worlddriveSpec), swaggerUi.setup(worlddriveSpec, {
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'PSE 2025 World Drive API',
   }));
   
   // Create an index page for API documentation
@@ -93,6 +102,13 @@ export function setupSwagger(app: Express): void {
           <p><strong>Endpoints:</strong> /api/products, /api/cart, /api/orders</p>
           <a href="/api-docs/merchandise">View Merchandise API Documentation →</a>
         </div>
+
+        <div class="api-section">
+          <h2>World Drive API</h2>
+          <p>Track the PSE super car location in real-time as it travels around the world.</p>
+          <p><strong>Endpoints:</strong> /api/supercar/location, /api/supercar/history</p>
+          <a href="/api-docs/worlddrive">View World Drive API Documentation →</a>
+        </div>
       </body>
       </html>
     `);
@@ -109,9 +125,15 @@ export function setupSwagger(app: Express): void {
     res.send(merchandiseSpec);
   });
   
+  app.get('/api-docs/worlddrive.json', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.send(worlddriveSpec);
+  });
+  
   console.log('Swagger UI available at:');
   console.log('  - http://localhost:4000/api-docs (index)');
   console.log('  - http://localhost:4000/api-docs/cars (Cars API)');
   console.log('  - http://localhost:4000/api-docs/merchandise (Merchandise API)');
+  console.log('  - http://localhost:4000/api-docs/worlddrive (World Drive API)');
 }
 

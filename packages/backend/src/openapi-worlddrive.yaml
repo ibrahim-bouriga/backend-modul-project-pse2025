@@ -1,0 +1,177 @@
+openapi: 3.0.0
+info:
+  title: World Drive API
+  description: API for tracking the PSE super car location in real-time
+  version: 1.0.0
+servers:
+  - url: http://localhost:4000
+    description: Development server
+
+paths:
+  /api/supercar/location:
+    get:
+      summary: Get current super car location
+      description: Returns the latest location data for the active super car
+      tags:
+        - Super Car
+      responses:
+        '200':
+          description: Current super car location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    example: "cmqkp1g17000qrx9kuzkwkgm1"
+                  name:
+                    type: string
+                    example: "PSE Hyperion World Tour"
+                  latitude:
+                    type: number
+                    format: float
+                    example: 52.52
+                  longitude:
+                    type: number
+                    format: float
+                    example: 13.405
+                  speed:
+                    type: number
+                    format: float
+                    nullable: true
+                    example: 120.5
+                  heading:
+                    type: number
+                    format: float
+                    nullable: true
+                    example: 90
+                    description: Direction in degrees (0-360)
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-06-19T08:55:32.202Z"
+                  active:
+                    type: boolean
+                    example: true
+        '404':
+          description: No active super car found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "No active super car found"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to fetch super car location"
+
+  /api/supercar/history:
+    get:
+      summary: Get super car location history
+      description: Returns historical location data for the super car with optional filtering
+      tags:
+        - Super Car
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of records to return (max 1000)
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            example: 50
+        - name: startDate
+          in: query
+          description: Start date for filtering (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2026-06-19T00:00:00Z"
+        - name: endDate
+          in: query
+          description: End date for filtering (ISO 8601 format)
+          required: false
+          schema:
+            type: string
+            format: date-time
+            example: "2026-06-19T23:59:59Z"
+      responses:
+        '200':
+          description: Super car location history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 50
+                  limit:
+                    type: integer
+                    example: 100
+                  startDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2026-06-19T00:00:00Z"
+                  endDate:
+                    type: string
+                    format: date-time
+                    nullable: true
+                    example: "2026-06-19T23:59:59Z"
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                          example: "cmqkp1g17000qrx9kuzkwkgm1"
+                        name:
+                          type: string
+                          example: "PSE Hyperion World Tour"
+                        latitude:
+                          type: number
+                          format: float
+                          example: 52.52
+                        longitude:
+                          type: number
+                          format: float
+                          example: 13.405
+                        speed:
+                          type: number
+                          format: float
+                          nullable: true
+                          example: 120.5
+                        heading:
+                          type: number
+                          format: float
+                          nullable: true
+                          example: 90
+                        timestamp:
+                          type: string
+                          format: date-time
+                          example: "2026-06-19T08:55:32.202Z"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Failed to fetch super car history"
+

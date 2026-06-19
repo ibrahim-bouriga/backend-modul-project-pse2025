@@ -5,6 +5,7 @@ import productsRouter from './routes/products.js';
 import cartRouter from './routes/cart.js';
 import ordersRouter from './routes/orders.js';
 import vehiclesRouter from './routes/vehicles.js';
+import supercarRouter from './routes/supercar.js';
 import { setupSwagger } from './swagger.js';
 
 const app = express();
@@ -23,6 +24,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/vehicles', vehiclesRouter);
+app.use('/api/supercar', supercarRouter);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
@@ -58,6 +60,8 @@ app.get('/api', (req: Request, res: Response) => {
             { path: '/api/vehicles/:id/status', method: 'GET', description: 'Get latest vehicle status' },
             { path: '/api/vehicles/:id/history', method: 'GET', description: 'Get vehicle status history' },
             { path: '/api/vehicles', method: 'POST', description: 'Register new vehicle' },
+            { path: '/api/supercar/location', method: 'GET', description: 'Get current super car location' },
+            { path: '/api/supercar/history', method: 'GET', description: 'Get super car location history' },
         ]
     });
 });
