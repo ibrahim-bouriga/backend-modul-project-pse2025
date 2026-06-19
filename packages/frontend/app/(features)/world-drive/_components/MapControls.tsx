@@ -15,7 +15,7 @@ export default function MapControls({
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <button
           onClick={onZoomIn}
-          className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors border-b border-gray-200"
+          className="w-10 h-10 flex items-center justify-center text-black hover:bg-gray-100 transition-colors border-b border-gray-200"
           aria-label="Zoom in"
         >
           <svg
@@ -34,7 +34,7 @@ export default function MapControls({
         </button>
         <button
           onClick={onZoomOut}
-          className="w-10 h-10 flex items-center justify-center hover:bg-gray-100 transition-colors"
+          className="w-10 h-10 flex items-center justify-center text-black hover:bg-gray-100 transition-colors"
           aria-label="Zoom out"
         >
           <svg
@@ -56,7 +56,7 @@ export default function MapControls({
       {/* Center on Car Button */}
       <button
         onClick={onCenterOnCar}
-        className="w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-100 transition-colors"
+        className="w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center text-black hover:bg-gray-100 transition-colors"
         aria-label="Center on car"
       >
         <svg
@@ -83,7 +83,7 @@ export default function MapControls({
       {/* Follow Mode Toggle */}
       <button
         onClick={onToggleFollow}
-        className={`w-10 h-10 rounded-lg shadow-lg flex items-center justify-center transition-colors ${
+        className={`w-10 h-10 rounded-lg shadow-lg flex items-center justify-center text-black transition-colors ${
           followMode
             ? 'bg-blue-600 text-white hover:bg-blue-700'
             : 'bg-white hover:bg-gray-100'

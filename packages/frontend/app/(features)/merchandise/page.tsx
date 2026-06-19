@@ -7,7 +7,7 @@ import ProductGrid from "./_components/ProductGrid";
 import CategoryFilter from "./_components/CategoryFilter";
 import ShoppingCart from "./_components/ShoppingCart";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 function MerchandiseContent() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -31,8 +31,9 @@ function MerchandiseContent() {
         }
         
         const data = await response.json();
-        setProducts(data.products);
-        setFilteredProducts(data.products);
+        const products = data.data ?? [];
+        setProducts(products);
+        setFilteredProducts(products);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load products");
         console.error("Error fetching products:", err);

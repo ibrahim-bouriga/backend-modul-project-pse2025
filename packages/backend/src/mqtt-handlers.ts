@@ -23,39 +23,30 @@ async function handleSuperCarGPS(payload: SuperCarGPS): Promise<void> {
   try {
     console.log('[MQTT Handler] Super Car GPS update:', payload);
 
-    // Find the active super car or create one
-    const existingSuperCar = await prisma.superCar.findFirst({
-      where: { active: true },
+    const superCarName = 'PSE Hyperion World Tour';
+
+    await prisma.superCar.upsert({
+      where: { name: superCarName },
+      update: {
+        latitude: payload.lat,
+        longitude: payload.lng,
+        speed: payload.speed,
+        heading: payload.heading,
+        timestamp: new Date(payload.timestamp),
+        active: true,
+      },
+      create: {
+        name: superCarName,
+        latitude: payload.lat,
+        longitude: payload.lng,
+        speed: payload.speed,
+        heading: payload.heading,
+        timestamp: new Date(payload.timestamp),
+        active: true,
+      },
     });
 
-    if (existingSuperCar) {
-      // Update existing super car
-      await prisma.superCar.update({
-        where: { id: existingSuperCar.id },
-        data: {
-          latitude: payload.lat,
-          longitude: payload.lng,
-          speed: payload.speed,
-          heading: payload.heading,
-          timestamp: new Date(payload.timestamp),
-        },
-      });
-      console.log(`[MQTT Handler] Updated super car ${existingSuperCar.name}`);
-    } else {
-      // Create new super car entry
-      await prisma.superCar.create({
-        data: {
-          name: 'PSE Hyperion World Tour',
-          latitude: payload.lat,
-          longitude: payload.lng,
-          speed: payload.speed,
-          heading: payload.heading,
-          timestamp: new Date(payload.timestamp),
-          active: true,
-        },
-      });
-      console.log('[MQTT Handler] Created new super car entry');
-    }
+    console.log(`[MQTT Handler] Upserted super car ${superCarName}`);
   } catch (error) {
     console.error('[MQTT Handler] Error handling super car GPS:', error);
   }

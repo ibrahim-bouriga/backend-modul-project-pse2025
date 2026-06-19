@@ -95,8 +95,8 @@ npm run dev
 | Service | URL | Description |
 |---------|-----|-------------|
 | Frontend | http://localhost:3000 | Main web application |
-| Backend API | http://localhost:3001 | REST API endpoints |
-| API Docs | http://localhost:3001/api-docs | Swagger documentation |
+| Backend API | http://localhost:4000 | REST API endpoints |
+| API Docs | http://localhost:4000/api-docs | Swagger documentation |
 | MinIO Console | http://localhost:9002 | Object storage UI |
 | PostgreSQL | localhost:5432 | Database |
 | MQTT Broker | localhost:1883 | MQTT TCP |
@@ -210,7 +210,7 @@ packages/
 
 Once the backend is running, access the interactive API documentation:
 
-- **Swagger UI:** http://localhost:3001/api-docs
+- **Swagger UI:** http://localhost:4000/api-docs
 - **OpenAPI Specs:**
   - Cars API: `/openapi-cars.yaml`
   - Merchandise API: `/openapi-merchandise.yaml`

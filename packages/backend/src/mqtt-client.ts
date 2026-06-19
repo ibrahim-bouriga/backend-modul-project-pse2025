@@ -299,12 +299,20 @@ export class MQTTClientWrapper {
    * Handle incoming messages
    */
   private async handleMessage(topic: string, message: Buffer): Promise<void> {
+    const rawMessage = message.toString();
+
     try {
-      const payload = JSON.parse(message.toString());
+      const payload = JSON.parse(rawMessage);
       console.log(`[MQTT] Received message on ${topic}`);
 
       // Call registered handlers for this topic
-      const handlers = this.messageHandlers.get(topic) || [];
+      const exactHandlers = this.messageHandlers.get(topic) || [];
+      const wildcardHandlers = Array.from(this.messageHandlers.entries())
+        .filter(([registeredTopic]) => this.matchesTopicFilter(registeredTopic, topic))
+        .flatMap(([, handlers]) => handlers);
+
+      const handlers = [...new Set([...exactHandlers, ...wildcardHandlers])];
+
       for (const handler of handlers) {
         try {
           await handler(topic, payload);
@@ -313,8 +321,36 @@ export class MQTTClientWrapper {
         }
       }
     } catch (error) {
-      console.error(`[MQTT] Failed to parse message from ${topic}:`, error);
+      console.warn(`[MQTT] Ignoring non-JSON message from ${topic}: ${rawMessage}`);
     }
+  }
+
+  private matchesTopicFilter(filter: string, topic: string): boolean {
+    if (filter === topic) {
+      return true;
+    }
+
+    const filterLevels = filter.split('/');
+    const topicLevels = topic.split('/');
+
+    for (let index = 0; index < filterLevels.length; index++) {
+      const filterLevel = filterLevels[index];
+      const topicLevel = topicLevels[index];
+
+      if (filterLevel === '#') {
+        return true;
+      }
+
+      if (topicLevel === undefined) {
+        return false;
+      }
+
+      if (filterLevel !== '+' && filterLevel !== topicLevel) {
+        return false;
+      }
+    }
+
+    return filterLevels.length === topicLevels.length;
   }
 
   /**

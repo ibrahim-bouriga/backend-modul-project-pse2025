@@ -63,27 +63,45 @@ export default function WorldMap({
       setLoading(true);
       setError(null);
 
-      const response = await fetch('http://localhost:3001/api/supercar/location');
-      if (!response.ok) {
+      const response = await fetch('http://localhost:4000/api/supercar/location');
+
+      if (response.ok) {
+        const data = await response.json();
+        setCarLocation(data);
+
+        // Fetch history
+        const historyResponse = await fetch('http://localhost:4000/api/supercar/history?limit=100');
+        if (historyResponse.ok) {
+          const historyData = await historyResponse.json();
+          setLocationHistory(historyData.data ?? []);
+        }
+
+        return;
+      }
+
+      if (response.status !== 404 && response.status !== 500) {
         throw new Error('Failed to fetch supercar location');
       }
 
-      const data = await response.json();
-      setCarLocation(data.supercar);
-
-      // Fetch history
-      const historyResponse = await fetch('http://localhost:3001/api/supercar/history?limit=100');
-      if (historyResponse.ok) {
-        const historyData = await historyResponse.json();
-        setLocationHistory(historyData.history);
-      }
+      setCarLocation({
+        id: 'supercar-1',
+        name: 'PSE SuperCar',
+        latitude: initialLocation.lat,
+        longitude: initialLocation.lng,
+        speed: 0,
+        heading: 0,
+        timestamp: new Date().toISOString(),
+        active: false,
+      });
+      setLocationHistory([]);
+      setError('Waiting for live supercar telemetry...');
     } catch (err) {
       console.error('Error fetching initial location:', err);
       setError(err instanceof Error ? err.message : 'Failed to load car location');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [initialLocation.lat, initialLocation.lng]);
 
   // Set up MQTT connection
   useEffect(() => {
@@ -169,7 +187,9 @@ export default function WorldMap({
     // Cleanup on unmount
     return () => {
       if (mqttClientRef.current) {
-        mqttClientRef.current.end();
+        mqttClientRef.current.removeAllListeners();
+        mqttClientRef.current.end(true);
+        mqttClientRef.current = null;
       }
     };
   }, [fetchInitialLocation]);
@@ -254,13 +274,13 @@ export default function WorldMap({
   return (
     <div className="relative w-full h-screen">
       {/* Connection Status Indicator */}
-      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-4 py-2 flex items-center gap-2">
+      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-4 py-2 flex items-center gap-2 text-black">
         <div
           className={`w-3 h-3 rounded-full ${
             mqttConnected ? 'bg-green-500' : 'bg-red-500'
           } animate-pulse`}
         />
-        <span className="text-sm font-medium">
+        <span className="text-sm font-medium text-black">
           {mqttConnected ? 'Live Tracking' : 'Disconnected'}
         </span>
       </div>
