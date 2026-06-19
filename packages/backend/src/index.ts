@@ -1,6 +1,9 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import carsRouter from './routes/cars.js';
+import productsRouter from './routes/products.js';
+import cartRouter from './routes/cart.js';
+import ordersRouter from './routes/orders.js';
 import { setupSwagger } from './swagger.js';
 
 const app = express();
@@ -15,6 +18,9 @@ setupSwagger(app);
 
 // API Routes
 app.use('/api/cars', carsRouter);
+app.use('/api/products', productsRouter);
+app.use('/api/cart', cartRouter);
+app.use('/api/orders', ordersRouter);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
@@ -37,6 +43,15 @@ app.get('/api', (req: Request, res: Response) => {
             { path: '/api/cars/:id', method: 'GET', description: 'Get car details' },
             { path: '/api/cars/:id/configs', method: 'GET', description: 'Get car configurations' },
             { path: '/api/cars/:id/configs', method: 'POST', description: 'Create car configuration' },
+            { path: '/api/products', method: 'GET', description: 'List all products with filters' },
+            { path: '/api/products/:id', method: 'GET', description: 'Get product details' },
+            { path: '/api/cart/:sessionId', method: 'GET', description: 'Get shopping cart' },
+            { path: '/api/cart/:sessionId', method: 'POST', description: 'Add item to cart' },
+            { path: '/api/cart/:sessionId/:itemId', method: 'PUT', description: 'Update cart item quantity' },
+            { path: '/api/cart/:sessionId/:itemId', method: 'DELETE', description: 'Remove item from cart' },
+            { path: '/api/cart/:sessionId', method: 'DELETE', description: 'Clear cart' },
+            { path: '/api/cart/:sessionId/checkout', method: 'POST', description: 'Checkout and create order' },
+            { path: '/api/orders/:orderNumber', method: 'GET', description: 'Get order details' },
         ]
     });
 });

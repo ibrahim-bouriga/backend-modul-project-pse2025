@@ -1,8 +1,8 @@
 openapi: 3.0.0
 info:
-  title: PSE 2025 Backend API
+  title: PSE 2025 Cars API
   version: 1.0.0
-  description: API documentation for PSE 2025 automotive web application
+  description: API documentation for PSE 2025 cars overview and configurations
   contact:
     name: PSE Motors
     email: api@psemotors.com
@@ -366,3 +366,4 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+# Made with Bob
