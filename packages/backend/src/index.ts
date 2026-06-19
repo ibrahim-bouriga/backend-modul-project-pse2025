@@ -7,6 +7,7 @@ import ordersRouter from './routes/orders.js';
 import vehiclesRouter from './routes/vehicles.js';
 import supercarRouter from './routes/supercar.js';
 import { setupSwagger } from './swagger.js';
+import { initializeMQTT } from './mqtt-handlers.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -66,9 +67,18 @@ app.get('/api', (req: Request, res: Response) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
+// Start server and initialize MQTT
+app.listen(PORT, async () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
     console.log(`API available at http://localhost:${PORT}/api`);
+    
+    // Initialize MQTT connection and handlers
+    try {
+        await initializeMQTT();
+        console.log('✓ MQTT integration ready');
+    } catch (error) {
+        console.error('✗ MQTT initialization failed:', error);
+        console.error('  Server will continue without MQTT functionality');
+    }
 });
 
