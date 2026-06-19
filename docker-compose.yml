@@ -78,6 +78,25 @@ services:
       retries: 5
     restart: unless-stopped
 
+  webshop:
+    profiles: ["prod"]
+    build:
+      context: ./packages/webshop
+      dockerfile: Dockerfile
+    ports:
+      - "${WEBSHOP_PORT:-4001}:4001"
+    environment:
+      PORT: "4001"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pse2025}"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   mosquitto_data:
