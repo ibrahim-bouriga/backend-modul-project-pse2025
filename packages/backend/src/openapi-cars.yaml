@@ -1,0 +1,367 @@
+openapi: 3.0.0
+info:
+  title: PSE 2025 Cars API
+  version: 1.0.0
+  description: API documentation for PSE 2025 cars overview and configurations
+  contact:
+    name: PSE Motors
+    email: api@psemotors.com
+
+servers:
+  - url: http://localhost:4000
+    description: Development server
+
+tags:
+  - name: Cars
+    description: Car management endpoints
+  - name: Health
+    description: Health check endpoints
+
+components:
+  schemas:
+    Car:
+      type: object
+      properties:
+        id:
+          type: string
+          example: cmqkp1fzx0000rx9kla8mnf46
+        make:
+          type: string
+          example: PSE Motors
+        model:
+          type: string
+          example: Thunder GT
+        year:
+          type: integer
+          example: 2025
+        description:
+          type: string
+        basePrice:
+          type: string
+          example: "89999"
+        imageUrl:
+          type: string
+          example: /images/cars/thunder-gt.jpg
+        specs:
+          type: object
+        available:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        _count:
+          type: object
+          properties:
+            configurations:
+              type: integer
+
+    CarConfiguration:
+      type: object
+      properties:
+        id:
+          type: string
+        carId:
+          type: string
+        color:
+          type: string
+          example: "#FF0000"
+        wheels:
+          type: string
+          example: 20-inch Sport Alloys
+        interior:
+          type: string
+          example: Black Leather Premium
+        extras:
+          type: object
+        price:
+          type: string
+          example: "95999"
+        modelUrl:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          example: 5
+        totalPages:
+          type: integer
+          example: 1
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      description: Check if the API server is running
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  message:
+                    type: string
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/cars:
+    get:
+      summary: List all cars
+      description: Get a paginated list of all cars with optional filters
+      tags:
+        - Cars
+      parameters:
+        - in: query
+          name: make
+          schema:
+            type: string
+          description: Filter by car make
+        - in: query
+          name: model
+          schema:
+            type: string
+          description: Filter by car model
+        - in: query
+          name: year
+          schema:
+            type: integer
+          description: Filter by year
+        - in: query
+          name: minPrice
+          schema:
+            type: number
+          description: Minimum price filter
+        - in: query
+          name: maxPrice
+          schema:
+            type: number
+          description: Maximum price filter
+        - in: query
+          name: available
+          schema:
+            type: boolean
+          description: Filter by availability
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+          description: Items per page
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Car'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cars/{id}:
+    get:
+      summary: Get car details
+      description: Get detailed information about a specific car
+      tags:
+        - Cars
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Car ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '404':
+          description: Car not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/cars/{id}/configs:
+    get:
+      summary: Get car configurations
+      description: Get all available configurations for a specific car
+      tags:
+        - Cars
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Car ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  carId:
+                    type: string
+                  configurations:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CarConfiguration'
+                  total:
+                    type: integer
+        '404':
+          description: Car not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create car configuration
+      description: Create a custom configuration for a specific car
+      tags:
+        - Cars
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Car ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - color
+                - wheels
+                - interior
+                - price
+              properties:
+                color:
+                  type: string
+                  example: "#FF0000"
+                wheels:
+                  type: string
+                  example: 20-inch Sport Alloys
+                interior:
+                  type: string
+                  example: Black Leather Premium
+                extras:
+                  type: object
+                  example:
+                    sunroof: true
+                    carbonFiber: true
+                price:
+                  type: number
+                  example: 95999
+                modelUrl:
+                  type: string
+                  format: uri
+      responses:
+        '201':
+          description: Configuration created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  configuration:
+                    $ref: '#/components/schemas/CarConfiguration'
+        '400':
+          description: Invalid request or car not available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Car not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

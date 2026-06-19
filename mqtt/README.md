@@ -68,18 +68,36 @@ client.on("message", (topic, message) => {
 
 ---
 
-## Topic-Konventionen
+## PSE 2025 Topic Structure
 
-Damit alle Teams konfliktfrei arbeiten können, bitte folgendes Schema einhalten:
+This project uses a hierarchical MQTT topic structure for different features:
+
+### Topic Hierarchy
 
 ```
-<projekt>/<team>/<funktion>
+car/
+├── supercar/
+│   ├── gps              # Super car GPS updates for World Drive
+│   │   └── Payload: { lat: number, lng: number, speed: number, heading: number, timestamp: string }
+│   └── status           # Super car status
+│       └── Payload: { active: boolean, name: string }
+│
+├── {vehicleId}/
+│   ├── gps              # User vehicle GPS location
+│   │   └── Payload: { lat: number, lng: number, timestamp: string }
+│   ├── fuel             # Fuel level updates
+│   │   └── Payload: { level: number, timestamp: string }
+│   ├── speed            # Speed updates
+│   │   └── Payload: { speed: number, timestamp: string }
+│   └── status           # Vehicle status
+│       └── Payload: { online: boolean, battery: number, etc }
+│
+└── configurator/
+    ├── control          # Smartphone control input for 3D configurator
+    │   └── Payload: { action: string, data: any }
+    └── telemetry        # 3D model telemetry
+        └── Payload: { position: object, rotation: object, speed: number }
 ```
-
-**Beispiele:**
-- `pse2025/teamA/sensor-daten`
-- `pse2025/teamB/status`
-- `pse2025/shared/events`
 
 ---
 

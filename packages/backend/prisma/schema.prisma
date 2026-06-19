@@ -1,7 +1,9 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This schema defines all database models for:
+// - Car catalog and configurations
+// - E-commerce (merchandise shop)
+// - User vehicle management
+// - Real-time GPS tracking
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
   provider = "prisma-client"
@@ -10,4 +12,195 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+/// Represents a car model in the PSE Motors catalog
+/// Used to display available vehicles in the Cars Overview page
+model Car {
+  id          String   @id @default(cuid())
+  make        String   // Manufacturer name (e.g., "PSE Motors")
+  model       String   // Model name (e.g., "Thunder GT", "Hyperion")
+  year        Int      // Model year (e.g., 2025)
+  description String   @db.Text // Detailed description for marketing
+  basePrice   Decimal  @db.Decimal(10, 2) // Starting price before customization
+  imageUrl    String?  // URL to car image in MinIO storage
+  specs       Json     // Technical specs: { horsepower, topSpeed, acceleration, weight, etc. }
+  available   Boolean  @default(true) // Whether car is currently available for purchase
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  configurations CarConfiguration[] // All possible configurations for this car
+  
+  // Indexes for performance
+  @@index([make, model]) // Fast lookup by manufacturer and model
+  @@map("cars") // Table name in database
+}
+
+/// Represents a specific configuration of a car model
+/// Used in the Car Configurator to save custom configurations
+model CarConfiguration {
+  id          String   @id @default(cuid())
+  carId       String   // Foreign key to Car model
+  car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+  color       String   // Color choice (hex code or name, e.g., "#FF0000" or "Racing Red")
+  wheels      String   // Wheel style name (e.g., "Sport 20-inch", "Chrome Alloy")
+  interior    String   // Interior package (e.g., "Luxury Leather", "Sport Carbon")
+  extras      Json     // Additional options: { sunroof: true, sportPackage: true, etc. }
+  price       Decimal  @db.Decimal(10, 2) // Total price with all customizations
+  modelUrl    String?  // URL to 3D model file (GLB/GLTF) in MinIO for configurator
+  createdAt   DateTime @default(now())
+  
+  @@index([carId]) // Fast lookup of configurations for a specific car
+  @@map("car_configurations")
+}
+
+// MERCHANDISE & E-COMMERCE
+// Used for: Merchandise Shop page
+
+/// Represents a merchandise product in the shop
+/// Includes apparel, accessories, and collectibles
+model Product {
+  id          String   @id @default(cuid())
+  name        String   // Product name (e.g., "PSE Racing Jacket", "Thunder GT Model Car")
+  description String   @db.Text // Detailed product description
+  price       Decimal  @db.Decimal(10, 2) // Product price
+  category    String   // Category: "apparel", "accessories", "collectibles"
+  imageUrl    String   // URL to product image in MinIO
+  stock       Int      @default(0) // Available inventory count
+  available   Boolean  @default(true) // Whether product is available for purchase
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  cartItems   CartItem[]  // All cart items containing this product
+  orderItems  OrderItem[] // All order items containing this product
+  
+  @@index([category, available]) // Fast filtering by category and availability
+  @@map("products")
+}
+
+/// Represents a shopping cart for a user session
+/// Uses sessionId for guest checkout (no authentication required)
+model Cart {
+  id        String     @id @default(cuid())
+  sessionId String     @unique // UUID stored in browser localStorage for guest users
+  userId    String?    // Optional: for future authenticated user support
+  items     CartItem[] // All items in this cart
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  
+  @@index([sessionId]) // Fast cart lookup by session
+  @@map("carts")
+}
+
+/// Represents a single item in a shopping cart
+/// Links a product to a cart with quantity
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String   // Foreign key to Cart
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String   // Foreign key to Product
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      @default(1) // Number of items (must be >= 1)
+  createdAt DateTime @default(now())
+  
+  @@unique([cartId, productId]) // Prevent duplicate products in same cart
+  @@index([cartId]) // Fast lookup of all items in a cart
+  @@map("cart_items")
+}
+
+/// Represents a completed order after checkout
+/// Stores customer information and order status
+model Order {
+  id            String      @id @default(cuid())
+  orderNumber   String      @unique // Human-readable order number (e.g., "ORD-2025-001234")
+  sessionId     String      // Session that created this order
+  totalAmount   Decimal     @db.Decimal(10, 2) // Total order amount including all items
+  status        String      @default("pending") // Order status: "pending", "completed", "cancelled"
+  customerEmail String?     // Customer email for order confirmation
+  customerName  String?     // Customer name for shipping/billing
+  items         OrderItem[] // All items in this order
+  createdAt     DateTime    @default(now()) // Order creation timestamp
+  updatedAt     DateTime    @updatedAt
+  
+  @@index([sessionId]) // Fast lookup of orders by session
+  @@index([orderNumber]) // Fast lookup by order number
+  @@map("orders")
+}
+
+/// Represents a single item in a completed order
+/// Stores price at time of purchase (for historical accuracy)
+model OrderItem {
+  id        String   @id @default(cuid())
+  orderId   String   // Foreign key to Order
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String   // Foreign key to Product
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int      // Number of items ordered
+  price     Decimal  @db.Decimal(10, 2) // Price at time of order (may differ from current price)
+  createdAt DateTime @default(now())
+  
+  @@index([orderId]) // Fast lookup of all items in an order
+  @@map("order_items")
+}
+
+
+// VEHICLES & TELEMETRY
+// Used for: MyPSECar page (personal vehicle dashboard)
+
+/// Represents a vehicle owned by a user
+/// Links a user to their purchased car with real-time tracking
+model UserVehicle {
+  id           String          @id @default(cuid())
+  userId       String          // User identifier (future: link to auth system)
+  carId        String          // Reference to Car model (which model was purchased)
+  nickname     String?         // Optional custom name (e.g., "My Thunder GT", "Weekend Cruiser")
+  vin          String          @unique // Vehicle Identification Number (unique per vehicle)
+  purchaseDate DateTime?       // Date when vehicle was purchased
+  createdAt    DateTime        @default(now())
+  
+  // Relations
+  status       VehicleStatus[] // Historical status records (GPS, fuel, speed)
+  
+  @@index([userId]) // Fast lookup of all vehicles for a user
+  @@index([vin]) // Fast lookup by VIN
+  @@map("user_vehicles")
+}
+
+/// Represents real-time telemetry data from a user's vehicle
+/// Receives data via MQTT from vehicle or simulation script
+/// Stores historical data for tracking and analytics
+model VehicleStatus {
+  id        String       @id @default(cuid())
+  vehicleId String       // Foreign key to UserVehicle
+  vehicle   UserVehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  fuelLevel Float        // Fuel level percentage (0-100)
+  latitude  Float        // GPS latitude coordinate
+  longitude Float        // GPS longitude coordinate
+  speed     Float?       // Current speed in km/h (optional)
+  timestamp DateTime     @default(now()) // When this status was recorded
+  
+  @@index([vehicleId, timestamp]) // Fast lookup of status history for a vehicle
+  @@map("vehicle_status")
+}
+
+// SUPER CAR TRACKING
+// Used for: World Drive page (live GPS tracking on map)
+
+/// Represents the PSE super car that drives around the world
+/// Receives real-time GPS updates via MQTT
+/// Displayed on World Drive map with live position updates
+model SuperCar {
+  id        String   @id @default(cuid())
+  name      String   @unique // Super car name (e.g., "PSE Hyperion", "Thunder World Tour")
+  latitude  Float    // Current GPS latitude
+  longitude Float    // Current GPS longitude
+  speed     Float?   // Current speed in km/h (optional)
+  heading   Float?   // Direction of travel in degrees (0-360, where 0=North)
+  timestamp DateTime @default(now()) // When this position was recorded
+  active    Boolean  @default(true) // Whether this super car is currently active/tracking
+  
+  @@index([active, timestamp]) // Fast lookup of active super car's latest position
+  @@map("super_cars")
 }

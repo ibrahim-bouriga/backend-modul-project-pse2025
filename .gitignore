@@ -34,4 +34,20 @@ npm-debug.log*
 .cache/
 
 # Local configuration overrides
+
+# Prisma generated files
+packages/backend/src/generated/
+
+# Next.js
+packages/frontend/.next/
+packages/frontend/out/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+tmp/
+temp/
 *.local
