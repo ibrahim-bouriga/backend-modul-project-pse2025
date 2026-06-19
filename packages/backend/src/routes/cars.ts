@@ -18,11 +18,13 @@ const CarFiltersSchema = z.object({
 });
 
 const CreateConfigurationSchema = z.object({
-  color: z.string().min(1),
-  wheels: z.string().min(1),
-  interior: z.string().min(1),
-  extras: z.record(z.string(), z.any()).optional().default({}),
-  price: z.number().positive(),
+  configuration: z.object({
+    colorId: z.string().min(1),
+    wheelsId: z.string().min(1),
+    interiorId: z.string().min(1),
+    extraIds: z.array(z.string()).optional().default([]),
+  }),
+  totalPrice: z.number().positive(),
   modelUrl: z.string().url().optional(),
 });
 
@@ -213,17 +215,20 @@ router.post('/:id/configs', async (req: Request, res: Response) => {
     const configuration = await prisma.carConfiguration.create({
       data: {
         carId: id,
-        color: configData.color,
-        wheels: configData.wheels,
-        interior: configData.interior,
-        extras: configData.extras as any,
-        price: configData.price,
+        color: configData.configuration.colorId,
+        wheels: configData.configuration.wheelsId,
+        interior: configData.configuration.interiorId,
+        extras: { extraIds: configData.configuration.extraIds } as any,
+        price: configData.totalPrice,
         modelUrl: configData.modelUrl,
       },
     });
     
     res.status(201).json({
+      success: true,
       message: 'Configuration created successfully',
+      configurationId: configuration.id,
+      totalPrice: configuration.price,
       configuration,
     });
   } catch (error) {
