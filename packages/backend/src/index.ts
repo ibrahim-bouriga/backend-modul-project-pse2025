@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import carsRouter from './routes/cars.js';
 import productsRouter from './routes/products.js';
 import cartRouter from './routes/cart.js';
@@ -7,10 +8,15 @@ import ordersRouter from './routes/orders.js';
 import vehiclesRouter from './routes/vehicles.js';
 import supercarRouter from './routes/supercar.js';
 import { setupSwagger } from './swagger.js';
-import { initializeMQTT } from './mqtt-handlers.js';
+import { initializeMQTT, getMQTTClient } from './mqtt-handlers.js';
+import { createWebSocketServer } from './websocket.js';
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 4000;
+
+// Create WebSocket server
+const wsServer = createWebSocketServer(httpServer);
 
 // Middleware
 app.use(cors());
@@ -67,15 +73,25 @@ app.get('/api', (req: Request, res: Response) => {
     });
 });
 
-// Start server and initialize MQTT
-app.listen(PORT, async () => {
+// Start server and initialize MQTT + WebSocket
+httpServer.listen(PORT, async () => {
     console.log(`Backend server running on http://localhost:${PORT}`);
     console.log(`API available at http://localhost:${PORT}/api`);
+    console.log(`WebSocket server ready on ws://localhost:${PORT}`);
     
     // Initialize MQTT connection and handlers
     try {
         await initializeMQTT();
         console.log('✓ MQTT integration ready');
+        
+        // Initialize WebSocket-MQTT bridge
+        const mqttClient = getMQTTClient();
+        if (mqttClient) {
+            wsServer.initialize(mqttClient);
+            console.log('✓ WebSocket-MQTT bridge ready');
+        } else {
+            console.warn('⚠ MQTT client not available, WebSocket bridge not initialized');
+        }
     } catch (error) {
         console.error('✗ MQTT initialization failed:', error);
         console.error('  Server will continue without MQTT functionality');

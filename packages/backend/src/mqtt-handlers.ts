@@ -316,6 +316,9 @@ export async function setupMQTTHandlers(mqttClient: MQTTClientWrapper): Promise<
   console.log('  - car/+/speed (all vehicles)');
 }
 
+// Store the MQTT client instance
+let mqttClientInstance: MQTTClientWrapper | null = null;
+
 /**
  * Initialize MQTT client and handlers
  * Call this on server startup
@@ -326,10 +329,19 @@ export async function initializeMQTT(): Promise<MQTTClientWrapper> {
   try {
     await mqttClient.connect();
     await setupMQTTHandlers(mqttClient);
+    mqttClientInstance = mqttClient;
     console.log('[MQTT] Initialization complete');
     return mqttClient;
   } catch (error) {
     console.error('[MQTT] Failed to initialize:', error);
     throw error;
   }
+}
+
+/**
+ * Get the MQTT client instance
+ * Returns null if not initialized
+ */
+export function getMQTTClient(): MQTTClientWrapper | null {
+  return mqttClientInstance;
 }
