@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import carsRouter from './routes/cars.js';
+import { setupSwagger } from './swagger.js';
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -8,7 +10,13 @@ const PORT = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
 
-// Routes
+// Setup Swagger documentation
+setupSwagger(app);
+
+// API Routes
+app.use('/api/cars', carsRouter);
+
+// Health check
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({
         status: 'ok',
@@ -17,13 +25,18 @@ app.get('/api/health', (req: Request, res: Response) => {
     });
 });
 
+// API info
 app.get('/api', (req: Request, res: Response) => {
     res.json({
         message: 'Welcome to the Backend API',
         version: '1.0.0',
         endpoints: [
             { path: '/api/health', method: 'GET', description: 'Health check endpoint' },
-            { path: '/api', method: 'GET', description: 'API information' }
+            { path: '/api', method: 'GET', description: 'API information' },
+            { path: '/api/cars', method: 'GET', description: 'List all cars with filters' },
+            { path: '/api/cars/:id', method: 'GET', description: 'Get car details' },
+            { path: '/api/cars/:id/configs', method: 'GET', description: 'Get car configurations' },
+            { path: '/api/cars/:id/configs', method: 'POST', description: 'Create car configuration' },
         ]
     });
 });
