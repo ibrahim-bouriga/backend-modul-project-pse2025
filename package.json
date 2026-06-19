@@ -11,7 +11,9 @@
     "dev": "npm run dev:backend & npm run dev:frontend",
     "build:frontend": "npm run build --workspace=frontend",
     "build:backend": "npm run build --workspace=backend",
-    "build": "npm run build:backend && npm run build:frontend"
+    "build": "npm run build:backend && npm run build:frontend",
+    "simulate:supercar": "tsx scripts/simulate-supercar.ts",
+    "simulate:vehicle": "tsx scripts/simulate-vehicle.ts"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
