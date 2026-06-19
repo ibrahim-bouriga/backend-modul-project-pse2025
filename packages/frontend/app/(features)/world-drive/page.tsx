@@ -1,4 +1,5 @@
-import WorldMap from "./_components/WorldMap";
+import { Suspense } from "react";
+import WorldDriveApp from "./_components/WorldDriveApp";
 
 export default function WorldDrivePage() {
   return (
@@ -17,9 +18,10 @@ export default function WorldDrivePage() {
         </p>
       </div>
 
-      <div className="bg-zinc-900 rounded-2xl p-8 border border-zinc-800">
-        <WorldMap />
-      </div>
+      {/* Suspense required for useSearchParams inside WorldDriveApp */}
+      <Suspense>
+        <WorldDriveApp />
+      </Suspense>
     </div>
   );
 }
