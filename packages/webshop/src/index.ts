@@ -6,6 +6,7 @@ import { sessionMiddleware } from './middleware/session.js';
 import productsRouter from './routes/products.js';
 import cartRouter from './routes/cart.js';
 import ordersRouter from './routes/orders.js';
+import categoriesRouter from './routes/categories.js';
 import { startCartCleanupJob } from './jobs/cleanupExpiredCarts.js';
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(sessionMiddleware);
 app.use('/api/products', productsRouter);
 app.use('/api/cart', cartRouter);
 app.use('/api/orders', ordersRouter);
+app.use('/api/categories', categoriesRouter);
 
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
@@ -48,13 +50,9 @@ app.get('/api', (req: Request, res: Response) => {
             { path: '/api/cart', method: 'DELETE', description: 'Clear cart' },
             { path: '/api/cart/checkout', method: 'POST', description: 'Checkout and create order' },
             { path: '/api/orders/:orderNumber', method: 'GET', description: 'Get order details' },
+            { path: '/api/categories', method: 'GET', description: 'List all categories' },
         ]
     });
-});
-
-app.listen(PORT, () => {
-    console.log(`Webshop Backend läuft auf http://localhost:${PORT}`);
-    console.log(`API verfügbar unter http://localhost:${PORT}/api`);
 });
 
 app.listen(PORT, () => {
