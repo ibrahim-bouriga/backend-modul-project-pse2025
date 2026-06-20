@@ -38,6 +38,10 @@ services:
     build:
       context: ./packages/frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MQTT_BROKER_HOST: "${MQTT_BROKER_HOST:-localhost}"
+        NEXT_PUBLIC_MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+        NEXT_PUBLIC_MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
     image: nextjs-standalone-image
     container_name: nextjs-standalone-container
     environment:
@@ -47,6 +51,16 @@ services:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
+    restart: unless-stopped
+
+  ngrok:
+    profiles: ["prod"]
+    image: ngrok/ngrok:latest
+    command: http frontend:3000
+    environment:
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    depends_on:
+      - frontend
     restart: unless-stopped
 
   mosquitto:
