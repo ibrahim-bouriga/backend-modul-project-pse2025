@@ -40,7 +40,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
             {/* Drawer-Panel */}
             <div className="relative w-full max-w-sm bg-zinc-950 border-l border-zinc-800 h-full overflow-y-auto p-6 flex flex-col">
                 <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-black uppercase tracking-wide">Warenkorb</h2>
+                    <h2 className="text-lg font-black uppercase tracking-wide">Shopping Cart</h2>
                     <button onClick={onClose} className="text-zinc-500 hover:text-white text-xl leading-none">
                         ×
                     </button>
@@ -48,8 +48,8 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
                 {checkoutStatus === "done" ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center space-y-3">
-                        <p className="text-lg font-bold">Bestellung aufgegeben!</p>
-                        <p className="text-zinc-500 text-sm">Vielen Dank für deinen Einkauf.</p>
+                        <p className="text-lg font-bold">Order placed!</p>
+                        <p className="text-zinc-500 text-sm">Thank you for your purchase.</p>
                         <button
                             onClick={() => {
                                 setCheckoutStatus("idle");
@@ -57,12 +57,12 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                             }}
                             className="mt-4 px-4 py-2 rounded-full bg-white text-black text-xs font-semibold uppercase"
                         >
-                            Schließen
+                            Close
                         </button>
                     </div>
                 ) : items.length === 0 ? (
                     <p className="text-zinc-500 text-sm flex-1 flex items-center justify-center">
-                        Dein Warenkorb ist leer.
+                        Your cart is empty.
                     </p>
                 ) : (
                     <>
@@ -101,7 +101,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                                                 onClick={() => removeItem(item.id)}
                                                 className="ml-auto text-xs text-zinc-600 hover:text-red-400"
                                             >
-                                                Entfernen
+                                                Remove
                                             </button>
                                         </div>
                                     </div>
@@ -111,13 +111,13 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
 
                         <div className="border-t border-zinc-800 pt-4 mt-4 space-y-3">
                             <div className="flex justify-between font-bold">
-                                <span>Zwischensumme</span>
+                                <span>Subtotal</span>
                                 <span>{subtotal.toFixed(2)} €</span>
                             </div>
 
                             {checkoutStatus === "error" && (
                                 <p className="text-red-400 text-xs">
-                                    Checkout fehlgeschlagen. Bitte erneut versuchen.
+                                    Checkout failed. Please try again.
                                 </p>
                             )}
 
@@ -126,7 +126,7 @@ export default function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClo
                                 disabled={checkoutStatus === "loading"}
                                 className="w-full bg-white text-black font-bold uppercase tracking-wide py-3 rounded-full disabled:opacity-40"
                             >
-                                {checkoutStatus === "loading" ? "Wird verarbeitet..." : "Zur Kasse"}
+                                {checkoutStatus === "loading" ? "Processing..." : "Checkout"}
                             </button>
                         </div>
                     </>

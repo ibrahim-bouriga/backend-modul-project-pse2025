@@ -27,7 +27,7 @@ export default function AddToCartForm({ variants }: { variants: Variant[] }) {
     }
 
     if (variants.length === 0) {
-        return <p className="text-zinc-500 text-sm">Keine Varianten verfügbar.</p>;
+        return <p className="text-zinc-500 text-sm">No variants available.</p>;
     }
 
     return (
@@ -75,8 +75,8 @@ export default function AddToCartForm({ variants }: { variants: Variant[] }) {
 
             <p className="text-sm text-zinc-500">
                 {selectedVariant && selectedVariant.stock > 0
-                    ? `${selectedVariant.stock} auf Lager`
-                    : "Nicht auf Lager"}
+                    ? `${selectedVariant.stock} in stock`
+                    : "Not in stock"}
             </p>
 
             <button
@@ -84,7 +84,7 @@ export default function AddToCartForm({ variants }: { variants: Variant[] }) {
                 disabled={!selectedVariant || selectedVariant.stock === 0 || status === "loading"}
                 className="w-full bg-white text-black font-bold uppercase tracking-wide py-3 rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition"
             >
-                {status === "loading" ? "Wird hinzugefügt..." : status === "done" ? "Hinzugefügt ✓" : "In den Warenkorb"}
+                {status === "loading" ? "Adding..." : status === "done" ? "Added ✓" : "Add to Cart"}
             </button>
         </div>
     );

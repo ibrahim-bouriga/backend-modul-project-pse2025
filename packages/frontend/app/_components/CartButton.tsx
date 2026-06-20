@@ -14,7 +14,7 @@ export default function CartButton() {
                 onClick={() => setIsOpen(true)}
                 className="relative w-12 h-12 rounded-full flex items-center justify-center transition hover:opacity-90"
                 style={{ backgroundColor: "#cc0000" }}
-                aria-label="Warenkorb öffnen"
+                aria-label="Open cart"
             >
                 <svg
                     xmlns="http://www.w3.org/2000/svg"

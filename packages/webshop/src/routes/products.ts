@@ -20,7 +20,6 @@ router.get('/', async (req: Request, res: Response) => {
         orderBy:
             sort === 'price_asc' ? { basePrice: 'asc' }
             : sort === 'price_desc' ? { basePrice: 'desc' }
-            : sort === 'newest' ? { createdAt: 'desc' }
             : { id: 'asc' },
     });
 

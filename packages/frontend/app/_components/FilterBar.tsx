@@ -40,7 +40,7 @@ export default function FilterBar({
                         : "bg-zinc-900 text-zinc-400 border border-zinc-800 hover:border-zinc-600"
                 }`}
             >
-                Alle
+                All
             </button>
             {categories.map((cat) => (
                 <button
@@ -61,8 +61,8 @@ export default function FilterBar({
                 onChange={(e) => updateParam("sort", e.target.value || null)}
                 className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-semibold uppercase tracking-wide rounded-full px-4 py-2 min-w-[160px]"
         >
-                <option value="price_asc">Preis aufsteigend</option>
-                <option value="price_desc">Preis absteigend</option>
+                <option value="price_asc">Price ascending</option>
+                <option value="price_desc">Price descending</option>
             </select>
         </div>
     );

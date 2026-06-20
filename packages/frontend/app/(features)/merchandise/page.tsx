@@ -103,7 +103,7 @@ export default async function MerchandisePage({
 
             {products.length === 0 && (
                 <p className="text-zinc-500 text-center py-12">
-                    Keine Produkte in dieser Kategorie gefunden.
+                    No products found in this category.
                 </p>
             )}
         </div>
