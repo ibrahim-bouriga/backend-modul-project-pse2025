@@ -2,32 +2,27 @@
 import { useEffect, useRef, useState } from "react";
 import mqtt, { MqttClient } from "mqtt";
 
-const TOPIC = "pse2025/psecars/worlddrive/position";
-
-interface Props {
-  brokerUrl: string;
-}
+const TOPIC      = "psecars/worlddrive/position";
+const BROKER_WSS = "wss://broker.hivemq.com:8884/mqtt";
 
 type MqttStatus = "connecting" | "connected" | "error" | "idle";
 type GpsStatus  = "idle" | "active" | "error";
 
-export default function GpsPublisher({ brokerUrl }: Props) {
-  const [mqttStatus, setMqttStatus] = useState<MqttStatus>("idle");
-  const [gpsStatus,  setGpsStatus]  = useState<GpsStatus>("idle");
-  const [coords,     setCoords]     = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
-  const [publishCount, setPublishCount] = useState(0);
-  const [lastPublish,  setLastPublish]  = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+export default function GpsPublisher() {
+  const [mqttStatus,    setMqttStatus]    = useState<MqttStatus>("idle");
+  const [gpsStatus,     setGpsStatus]     = useState<GpsStatus>("idle");
+  const [coords,        setCoords]        = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [publishCount,  setPublishCount]  = useState(0);
+  const [lastPublish,   setLastPublish]   = useState<string | null>(null);
+  const [error,         setError]         = useState<string | null>(null);
 
   const clientRef = useRef<MqttClient | null>(null);
   const watchRef  = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!brokerUrl) { setError("No broker URL in link — please regenerate the QR code."); return; }
-
     setMqttStatus("connecting");
 
-    const client = mqtt.connect(brokerUrl, { reconnectPeriod: 5000, connectTimeout: 10_000 });
+    const client = mqtt.connect(BROKER_WSS, { reconnectPeriod: 5000, connectTimeout: 10_000 });
     clientRef.current = client;
 
     client.on("connect", () => {
@@ -47,7 +42,7 @@ export default function GpsPublisher({ brokerUrl }: Props) {
       client.end(true);
       if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
     };
-  }, [brokerUrl]);
+  }, []);
 
   function startGps(client: MqttClient) {
     if (!navigator.geolocation) { setGpsStatus("error"); setError("Geolocation not supported."); return; }
@@ -87,21 +82,19 @@ export default function GpsPublisher({ brokerUrl }: Props) {
       )}
 
       <div className="w-full max-w-sm space-y-3">
-        {/* MQTT */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 flex items-center gap-3">
           <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dot(mqttStatus)}`} />
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">MQTT Broker</p>
             <p className="text-sm text-white">
               {mqttStatus === "connecting" && "Connecting…"}
-              {mqttStatus === "connected"  && "Connected"}
+              {mqttStatus === "connected"  && "Connected · HiveMQ"}
               {mqttStatus === "error"      && "Connection failed"}
               {mqttStatus === "idle"       && "Disconnected"}
             </p>
           </div>
         </div>
 
-        {/* GPS */}
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4 flex items-center gap-3">
           <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dot(gpsStatus)}`} />
           <div>
@@ -114,7 +107,6 @@ export default function GpsPublisher({ brokerUrl }: Props) {
           </div>
         </div>
 
-        {/* Coordinates */}
         {coords && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-1">Position</p>
@@ -123,7 +115,6 @@ export default function GpsPublisher({ brokerUrl }: Props) {
           </div>
         )}
 
-        {/* Publish counter */}
         {publishCount > 0 && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl px-5 py-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500 mb-1">Published</p>

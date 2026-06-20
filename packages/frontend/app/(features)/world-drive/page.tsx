@@ -12,13 +12,11 @@ export default function WorldDrivePage() {
           World Drive
         </h1>
         <p className="text-zinc-400 text-base max-w-lg leading-relaxed">
-          Follow the manufacturer&apos;s super car as it roams the globe.
+          Follow the manufacturers super car as it roams the globe.
           Live GPS coordinates are broadcast from the vehicle via MQTT
           and plotted in real time on an interactive map.
         </p>
       </div>
-
-      {/* Suspense required for useSearchParams inside WorldDriveApp */}
       <Suspense>
         <WorldDriveApp />
       </Suspense>

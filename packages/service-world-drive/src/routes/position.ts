@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getPosition } from '../positionStore';
+import { getPosition } from '../services/position.service';
 
 const router = Router();
 

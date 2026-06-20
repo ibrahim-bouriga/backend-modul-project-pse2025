@@ -1,20 +1,14 @@
-/**
- * Fetches a real road route from the public OSRM API (no key needed),
- * then simulates a car driving along it by publishing GPS positions to MQTT.
- *
- * Usage: npm run simulate
- */
 import mqtt from 'mqtt';
 
-const TOPIC = 'pse2025/psecars/worlddrive/position';
+const TOPIC = 'psecars/worlddrive/position';
 const INTERVAL_MS = 1000;
 
-// Small Stuttgart loop: Schlossplatz → Hauptbahnhof → Rotebühlplatz → Schlossplatz (~3.5 km)
+// Route: Schlossplatz → Hauptbahnhof → Rotebühlplatz → Schlossplatz (~3.5 km)
 const WAYPOINTS: Array<[number, number]> = [
   [48.7778, 9.1800], // Schlossplatz
   [48.7845, 9.1827], // Hauptbahnhof
   [48.7815, 9.1680], // Rotebühlplatz
-  [48.7778, 9.1800], // Schlossplatz (loop)
+  [48.7778, 9.1800], // Schlossplatz (Start)
 ];
 
 interface OsrmResponse {
@@ -26,10 +20,11 @@ interface OsrmResponse {
   }>;
 }
 
-async function fetchRoadRoute(waypoints: Array<[number, number]>): Promise<Array<[number, number]>> {
+async function getRoadRoute(waypoints: Array<[number, number]>): Promise<Array<[number, number]>> { //Schickt die Wegpunkte an die öffentliche OSRM-API, die daraus eine echte Straßenroute berechnet (GeoJSON).
   // OSRM expects lng,lat — we store lat,lng
-  const coords = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(';');
-  const url = `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  const coordinates = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(';');
+  //console.log(coordinates);
+  const url = `https://router.project-osrm.org/route/v1/driving/${coordinates}?overview=full&geometries=geojson`;
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);
@@ -41,7 +36,7 @@ async function fetchRoadRoute(waypoints: Array<[number, number]>): Promise<Array
     const json = (await res.json()) as OsrmResponse;
     if (json.code !== 'Ok' || !json.routes?.[0]) throw new Error(`OSRM: ${json.code}`);
 
-    // GeoJSON uses [lng, lat] — convert to [lat, lng]
+    // GeoJSON nutzt [lng, lat] — convert to [lat, lng]
     return json.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
   } finally {
     clearTimeout(timeout);
@@ -52,19 +47,14 @@ async function main(): Promise<void> {
   let route: Array<[number, number]>;
 
   try {
-    console.log('[Simulator] Fetching road route from OSRM...');
-    route = await fetchRoadRoute(WAYPOINTS);
-    console.log(`[Simulator] Got ${route.length} road waypoints`);
+    route = await getRoadRoute(WAYPOINTS);
   } catch (err) {
     console.warn('[Simulator] OSRM unavailable, using manual fallback:', (err as Error).message);
     route = WAYPOINTS;
   }
 
-  const host = process.env.MQTT_BROKER_HOST ?? 'localhost';
-  const port = process.env.MQTT_BROKER_PORT ?? '1883';
-  const brokerUrl = `mqtt://${host}:${port}`;
+  const brokerUrl = process.env.MQTT_BROKER_URL ?? 'mqtt://broker.hivemq.com:1883';
 
-  console.log(`[Simulator] Connecting to ${brokerUrl}...`);
   const client = mqtt.connect(brokerUrl, { reconnectPeriod: 5000 });
   let index = 0;
 
