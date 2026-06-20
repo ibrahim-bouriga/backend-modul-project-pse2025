@@ -25,14 +25,16 @@ async function getProducts(searchParams: { category?: string; sort?: string }): 
     if (searchParams.category) params.set("category", searchParams.category);
     if (searchParams.sort) params.set("sort", searchParams.sort);
 
+    const hasFilters = Boolean(searchParams.category || searchParams.sort);
+
     const res = await fetch(`${BACKEND_URL}/api/products?${params.toString()}`, {
-        cache: "no-store",
+        cache: hasFilters ? "no-store" : "force-cache",
     });
     return res.json();
 }
 
 async function getCategories(): Promise<Category[]> {
-    const products = await fetch(`${BACKEND_URL}/api/products`, { cache: "no-store" }).then((r) => r.json());
+    const products = await fetch(`${BACKEND_URL}/api/products`, { cache: "force-cache" }).then((r) => r.json());
     const seen = new Map<string, Category>();
     for (const p of products as Product[]) {
         seen.set(p.category.slug, { id: 0, slug: p.category.slug, name: p.category.name });
