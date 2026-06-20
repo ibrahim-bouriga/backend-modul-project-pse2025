@@ -6,9 +6,6 @@ import type { CarPosition } from "./LeafletMap";
 // SSR must be disabled — Leaflet accesses browser APIs (window, document)
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
 
-const WORLD_DRIVE_URL =
-  process.env.NEXT_PUBLIC_WORLD_DRIVE_URL ?? "http://localhost:4003";
-
 const POLL_INTERVAL_MS = 200;
 const ANIM_DURATION_MS = 1000;
 const MAX_TRAIL_LENGTH = 200;
@@ -79,7 +76,7 @@ export default function WorldMap() {
   useEffect(() => {
     async function fetchPosition() {
       try {
-        const res = await fetch(`${WORLD_DRIVE_URL}/api/position`);
+        const res = await fetch("/api/world-drive/position");
         if (res.status === 404) { setStatus("connecting"); return; }
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = (await res.json()) as CarPosition;

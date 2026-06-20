@@ -44,6 +44,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:4003"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
