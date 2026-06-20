@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z, ZodError } from 'zod';
 import { prisma } from '../db.js';
 import type { Prisma } from '../generated/prisma/client.js';
+import { redis, safeRedisDel } from '../redis.js';
 
 const router = Router();
 
@@ -26,7 +27,21 @@ const CheckoutSchema = z.object({
 router.get('/', async (req: Request, res: Response) => {
     try {
         const sessionId = (req as any).sessionId;
+        const cacheKey = `cart:${sessionId}`;
 
+        // Erst im Cache nachschauen, aber: Redis-Fehler dürfen den Request nicht blockieren, falls Redis ncith erreichbar
+        let cached: string | null = null;
+        try {
+            cached = await redis.get(cacheKey);
+        } catch (redisError) {
+            console.error('[Cart API] Redis unavailable, falling back to database:', redisError);
+        }
+
+if (cached) {
+    res.json(JSON.parse(cached));
+    return;
+}
+        //wenn nicht im Cache, dann aus der DB laden
         const cart = await prisma.cart.findUnique({
             where: { sessionId },
             include: {
@@ -50,13 +65,23 @@ router.get('/', async (req: Request, res: Response) => {
 
         const itemCount = cart.items.reduce((sum: number, item: typeof cart.items[number]) => sum + item.quantity, 0);
 
-        res.json({
+        const responseBody = {
             cart,
             summary: {
                 itemCount,
                 subtotal: subtotal.toFixed(2),
             },
-        });
+        };
+
+        //Cache befüllen (passend zur Cart-Lebensdauer); aber: ohne Request zu blockieren, falls Redis nciht erreichbar
+        try {
+            await redis.set(cacheKey, JSON.stringify(responseBody), { EX: 300 });
+        } catch (redisError) {
+            console.error('[Cart API] Failed to write to Redis cache:', redisError);
+        }
+
+res.json(responseBody);
+
     } catch (error) {
         console.error('[Cart API] Error fetching cart:', error);
         res.status(500).json({
@@ -144,10 +169,13 @@ router.post('/items', async (req: Request, res: Response) => {
             });
         }
 
+        await safeRedisDel(`cart:${sessionId}`);
+
         res.status(201).json({
             message: 'Item added to cart',
             cartItem,
         });
+
     } catch (error) {
         if (error instanceof ZodError) {
             res.status(400).json({
@@ -203,7 +231,9 @@ router.patch('/items/:itemId', async (req: Request, res: Response) => {
             include: { variant: { include: { product: true } } },
         });
 
+        await safeRedisDel(`cart:${sessionId}`);
         res.json({ message: 'Cart item updated', cartItem: updatedItem });
+
     } catch (error) {
         if (error instanceof ZodError) {
             res.status(400).json({
@@ -243,6 +273,8 @@ router.delete('/items/:itemId', async (req: Request, res: Response) => {
 
         await prisma.cartItem.delete({ where: { id: itemId } });
 
+        await safeRedisDel(`cart:${sessionId}`);
+
         res.json({ message: 'Item removed from cart' });
     } catch (error) {
         console.error('[Cart API] Error removing cart item:', error);
@@ -266,8 +298,9 @@ router.delete('/', async (req: Request, res: Response) => {
         }
 
         await prisma.cartItem.deleteMany({ where: { cartId: cart.id } });
-
+        await safeRedisDel(`cart:${sessionId}`);
         res.json({ message: 'Cart cleared' });
+
     } catch (error) {
         console.error('[Cart API] Error clearing cart:', error);
         res.status(500).json({
@@ -356,7 +389,9 @@ router.post('/checkout', async (req: Request, res: Response) => {
             return newOrder;
         });
 
+        await safeRedisDel(`cart:${sessionId}`);
         res.status(201).json({ message: 'Order created successfully', order });
+
     } catch (error) {
         if (error instanceof ZodError) {
             res.status(400).json({

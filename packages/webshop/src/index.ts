@@ -8,6 +8,7 @@ import cartRouter from './routes/cart.js';
 import ordersRouter from './routes/orders.js';
 import categoriesRouter from './routes/categories.js';
 import { startCartCleanupJob } from './jobs/cleanupExpiredCarts.js';
+import { connectRedis } from './redis.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4001;
@@ -55,8 +56,9 @@ app.get('/api', (req: Request, res: Response) => {
     });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`Webshop Backend läuft auf http://localhost:${PORT}`);
     console.log(`API verfügbar unter http://localhost:${PORT}/api`);
+    await connectRedis();
     startCartCleanupJob();
 });
