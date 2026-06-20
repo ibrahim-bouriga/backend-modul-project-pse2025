@@ -73,7 +73,7 @@ client.on("message", (topic, message) => {
 Damit alle Teams konfliktfrei arbeiten können, bitte folgendes Schema einhalten:
 
 ```
-<projekt>/<team>/<funktion>
+{app}/{feature}/{daten}
 ```
 
 **Beispiele:**
