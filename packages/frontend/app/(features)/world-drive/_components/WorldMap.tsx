@@ -7,7 +7,7 @@ import type { CarPosition } from "./LeafletMap";
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
 
 const WORLD_DRIVE_URL =
-  process.env.NEXT_PUBLIC_WORLD_DRIVE_URL ?? "http://localhost:4001";
+  process.env.NEXT_PUBLIC_WORLD_DRIVE_URL ?? "http://localhost:4003";
 
 const POLL_INTERVAL_MS = 200;
 const ANIM_DURATION_MS = 1000;
@@ -26,8 +26,6 @@ export default function WorldMap() {
   const animatedRef = useRef<CarPosition | null>(null);
   const animStartRef = useRef<number>(0);
 
-  // Persistent rAF loop — never cancelled, reads target from refs each frame.
-  // This avoids the bug where effect cleanup cancels an in-progress animation.
   useEffect(() => {
     let frame: number;
 
@@ -53,8 +51,6 @@ export default function WorldMap() {
     return () => cancelAnimationFrame(frame);
   }, []); // empty deps — runs once for the lifetime of the component
 
-  // When a new server position arrives, update animation refs only.
-  // No animation is started or cancelled here.
   useEffect(() => {
     if (!serverPosition) return;
 
