@@ -6,7 +6,8 @@ import type { CarPosition } from "./LeafletMap";
 // SSR must be disabled — Leaflet accesses browser APIs (window, document)
 const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
 
-const POLL_INTERVAL_MS = 200;
+const POLL_INTERVAL_LIVE_MS = 200;   // fast when car is sending data
+const POLL_INTERVAL_IDLE_MS = 3000;  // slow when no signal
 const ANIM_DURATION_MS = 1000;
 const MAX_TRAIL_LENGTH = 200;
 
@@ -72,24 +73,37 @@ export default function WorldMap() {
     setTrail((prev) => [...prev.slice(-(MAX_TRAIL_LENGTH - 1)), serverPosition]);
   }, [serverPosition]);
 
+  const statusRef = useRef<Status>("connecting");
+
   // Poll the service for the latest GPS position
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+
     async function fetchPosition() {
       try {
         const res = await fetch("/api/world-drive/position");
-        if (res.status === 404) { setStatus("connecting"); return; }
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = (await res.json()) as CarPosition;
-        setServerPosition(data);
-        setStatus("live");
+        if (res.status === 404) {
+          statusRef.current = "connecting";
+          setStatus("connecting");
+        } else if (!res.ok) {
+          statusRef.current = "error";
+          setStatus("error");
+        } else {
+          const data = (await res.json()) as CarPosition;
+          setServerPosition(data);
+          statusRef.current = "live";
+          setStatus("live");
+        }
       } catch {
+        statusRef.current = "error";
         setStatus("error");
       }
+      const delay = statusRef.current === "live" ? POLL_INTERVAL_LIVE_MS : POLL_INTERVAL_IDLE_MS;
+      timer = setTimeout(fetchPosition, delay);
     }
 
     fetchPosition();
-    const interval = setInterval(fetchPosition, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    return () => clearTimeout(timer);
   }, []);
 
   const statusDot: Record<Status, string> = {
