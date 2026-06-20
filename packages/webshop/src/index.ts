@@ -6,6 +6,7 @@ import { sessionMiddleware } from './middleware/session.js';
 import productsRouter from './routes/products.js';
 import cartRouter from './routes/cart.js';
 import ordersRouter from './routes/orders.js';
+import { startCartCleanupJob } from './jobs/cleanupExpiredCarts.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4001;
@@ -54,4 +55,10 @@ app.get('/api', (req: Request, res: Response) => {
 app.listen(PORT, () => {
     console.log(`Webshop Backend läuft auf http://localhost:${PORT}`);
     console.log(`API verfügbar unter http://localhost:${PORT}/api`);
+});
+
+app.listen(PORT, () => {
+    console.log(`Webshop Backend läuft auf http://localhost:${PORT}`);
+    console.log(`API verfügbar unter http://localhost:${PORT}/api`);
+    startCartCleanupJob();
 });
