@@ -24,13 +24,10 @@ services:
       context: ./packages/service-world-drive
       dockerfile: Dockerfile
     ports:
-      - "${WORLD_DRIVE_PORT:-4001}:4001"
+      - "${WORLD_DRIVE_PORT:-4003}:4003"
     environment:
-      PORT: "4001"
-      MQTT_BROKER_HOST: mosquitto
-      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
-    depends_on:
-      - mosquitto
+      PORT: "4003"
+      MQTT_BROKER_URL: "mqtt://broker.hivemq.com:1883"
     restart: unless-stopped
 
   frontend:
@@ -58,7 +55,7 @@ services:
     image: ngrok/ngrok:latest
     command: http frontend:3000
     environment:
-      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+      NGROK_AUTHTOKEN: 2KDet8l4E1nLaKmDAep74ytUUH6_NFiErNCC8TRaKVZS9iip
     depends_on:
       - frontend
     restart: unless-stopped

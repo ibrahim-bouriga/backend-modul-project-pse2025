@@ -2,14 +2,12 @@
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 import GpsPublisher from "./GpsPublisher";
-import QRSetup from "./QRSetup";
+import QRSetup from "../QRSetup";
 
-const WorldMap = dynamic(() => import("./WorldMap"), { ssr: false });
+const WorldMap = dynamic(() => import("../WorldMap"), { ssr: false });
 
 export default function WorldDriveApp() {
-  const params         = useSearchParams();
-  const mode           = params.get("mode");
-  const frontendTunnel = params.get("frontendTunnel") ?? "";
+  const mode = useSearchParams().get("mode");
 
   if (mode === "gps") {
     return <GpsPublisher />;
@@ -20,7 +18,7 @@ export default function WorldDriveApp() {
       <div className="bg-zinc-900 rounded-2xl p-8 border border-zinc-800">
         <WorldMap />
       </div>
-      <QRSetup initialFrontendUrl={frontendTunnel} />
+      <QRSetup />
     </div>
   );
 }

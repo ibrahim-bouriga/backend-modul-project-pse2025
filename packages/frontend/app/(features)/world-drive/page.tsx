@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import WorldDriveApp from "./_components/WorldDriveApp";
+import WorldDriveApp from "./_components/mobile/WorldDriveApp";
 
 export default function WorldDrivePage() {
   return (
