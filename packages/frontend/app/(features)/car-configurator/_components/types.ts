@@ -11,24 +11,6 @@ export interface ColorOption {
   price: number;
 }
 
-// Wheel style option
-export interface WheelOption {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl?: string;
-}
-
-// Interior package option
-export interface InteriorOption {
-  id: string;
-  name: string;
-  description: string;
-  features: string[];
-  price: number;
-}
-
 // Extra features/options
 export interface ExtraOption {
   id: string;
@@ -43,32 +25,35 @@ export interface CarConfiguration {
   carId: string;
   carModel: string;
   basePrice: number;
-  color: ColorOption;
+  bodyColor: ColorOption;
+  wheelColor: ColorOption;
+  brakeColor: ColorOption;
   extras: ExtraOption[];
   totalPrice: number;
 }
 
 // Configuration state for the configurator
 export interface ConfiguratorState {
-  selectedColorId: string;
-  selectedWheelsId: string;
-  selectedInteriorId: string;
+  selectedBodyColorId: string;
+  selectedWheelColorId: string;
+  selectedBrakeColorId: string;
   selectedExtraIds: string[];
 }
 
 // Props for 3D viewer component
 export interface CarViewer3DProps {
-  color: string;
-  wheelsId: string;
+  bodyColor: string;
+  wheelColor: string;
+  brakeColor: string;
   isLoading?: boolean;
 }
 
 // Props for configuration panel
 export interface ConfigPanelProps {
   configuration: CarConfiguration;
-  onColorChange: (color: ColorOption) => void;
-  onWheelsChange: (wheels: WheelOption) => void;
-  onInteriorChange: (interior: InteriorOption) => void;
+  onBodyColorChange: (color: ColorOption) => void;
+  onWheelColorChange: (color: ColorOption) => void;
+  onBrakeColorChange: (color: ColorOption) => void;
   onExtrasChange: (extras: ExtraOption[]) => void;
   onSave: () => void;
   isSaving?: boolean;
@@ -76,7 +61,9 @@ export interface ConfigPanelProps {
 
 // Available options data structure
 export interface ConfigurationOptions {
-  colors: ColorOption[];
+  bodyColors: ColorOption[];
+  wheelColors: ColorOption[];
+  brakeColors: ColorOption[];
   extras: ExtraOption[];
 }
 

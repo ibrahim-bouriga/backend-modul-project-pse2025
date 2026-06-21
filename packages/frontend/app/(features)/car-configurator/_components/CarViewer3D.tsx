@@ -6,27 +6,13 @@ import { Suspense, useEffect } from 'react';
 import * as THREE from 'three';
 
 interface CarModelProps {
-  color: string;
+  bodyColor: string;
+  wheelColor: string;
+  brakeColor: string;
 }
 
-/**
- * Lamborghini Revuelto FBX model
- */
-function CarModel({ color }: CarModelProps) {
-  const gltf = useGLTF('/free_lamborghini_revuelto/scene.gltf');
-
-  useEffect(() => {
-    gltf.scene.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        // Log mesh and material names to inspect the model structure
-        const materials = Array.isArray(child.material) ? child.material : [child.material];
-        console.log('Mesh:', child.name, '| Materials:', materials.map(m => m.name));
-      }
-    });
-  }, [gltf]);
-
-  useEffect(() => {
-    gltf.scene.traverse((child) => {
+const setPartColor = (name: string, color: string, metalness: number, roughness: number, gltf: any) => {
+  gltf.scene.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
@@ -34,16 +20,89 @@ function CarModel({ color }: CarModelProps) {
         materials.forEach((mat) => {
           if (mat instanceof THREE.MeshStandardMaterial) {
             // TODO: Replace 'Body' with the actual mesh/material name found via console.log above
-            if (child.name.includes('Body') || mat.name.includes('Body')) {
+            if (child.name.includes(name) || mat.name.includes(name)) {
               mat.color.set(color);
-              mat.metalness = 0.8;
-              mat.roughness = 0.2;
+              mat.metalness = metalness;
+              mat.roughness = roughness;
             }
           }
         });
       }
     });
-  }, [gltf, color]);
+  };
+
+/**
+ * Lamborghini Revuelto FBX model
+ */
+function CarModel({ bodyColor, wheelColor, brakeColor }: CarModelProps) {
+  const gltf = useGLTF('/free_lamborghini_revuelto/scene.gltf');
+
+  useEffect(() => {
+    gltf.scene.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        const materials = Array.isArray(child.material) ? child.material : [child.material];
+
+        // Front daylight running lights — white/cool emissive
+        if (child.name === 'Daylight_Light_0') {
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.emissive = new THREE.Color(0xffffff);
+              mat.emissiveIntensity = 100;
+            }
+          });
+        }
+
+        // Front headlight glass — faint white glow + transparency
+        if (child.name === 'Daylight_Glass_Headlight_glass001_0') {
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.emissive = new THREE.Color(0xddeeff);
+              mat.emissiveIntensity = 0.6;
+              mat.transparent = true;
+              mat.opacity = 0.55;
+            }
+          });
+        }
+
+        // Rear taillights — red emissive
+        if (child.name === 'Tail_light_Tail_light_0') {
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.emissive = new THREE.Color(0xff1a00);
+              mat.emissiveIntensity = 3;
+            }
+          });
+        }
+
+        // Rear taillight glass — faint red glow + transparency
+        if (child.name === 'Tail_light_Taillight_glass_0') {
+          materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+              mat.emissive = new THREE.Color(0xff2200);
+              mat.emissiveIntensity = 0.6;
+              mat.transparent = true;
+              mat.opacity = 0.55;
+            }
+          });
+        }
+
+        // Log mesh and material names to inspect the model structure
+        console.log('Mesh:', child.name, '| Materials:', materials.map(m => m.name));
+      }
+    });
+  }, [gltf]);
+
+  useEffect(() => {
+    setPartColor('Body', bodyColor, 0.5, 0.1, gltf);
+  }, [gltf, bodyColor]);
+
+  useEffect(() => {
+    setPartColor('Rim', wheelColor, 1, 0, gltf);
+  }, [gltf, wheelColor]);
+  
+  useEffect(() => {
+    setPartColor('Caliper', brakeColor, 0.5, 0.1, gltf);
+  }, [gltf, brakeColor]);
 
   return <primitive object={gltf.scene} scale={2} position={[0, -0.8, 0]}/>;
 }
@@ -77,7 +136,9 @@ function Ground() {
 }
 
 export interface CarViewer3DProps {
-  color: string;
+  bodyColor: string;
+  wheelColor: string;
+  brakeColor: string;
   isLoading?: boolean;
 }
 
@@ -85,7 +146,7 @@ export interface CarViewer3DProps {
  * Main 3D Car Viewer Component
  * Renders an interactive 3D car model with orbit controls
  */
-export default function CarViewer3D({ color, isLoading = false }: CarViewer3DProps) {
+export default function CarViewer3D({ bodyColor, wheelColor, brakeColor, isLoading = false }: CarViewer3DProps) {
   return (
     <div className="w-full h-full bg-zinc-900 rounded-lg overflow-hidden">
       <Canvas shadows scene={{ background: new THREE.Color('#000000') }}>
@@ -117,7 +178,7 @@ export default function CarViewer3D({ color, isLoading = false }: CarViewer3DPro
         
         {/* Car Model */}
         <Suspense fallback={<LoadingFallback />}>
-          <CarModel color={color} />
+          <CarModel bodyColor={bodyColor} wheelColor={wheelColor} brakeColor={brakeColor}/>
         </Suspense>
         
         {/* Orbit Controls */}

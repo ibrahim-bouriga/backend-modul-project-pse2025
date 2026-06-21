@@ -1,15 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { CarConfiguration, ColorOption, WheelOption, InteriorOption, ExtraOption } from './types';
+import { CarConfiguration, ColorOption, ExtraOption } from './types';
 import ColorPicker from './ColorPicker';
 import PriceCalculator from './PriceCalculator';
 
 interface ConfigPanelProps {
   configuration: CarConfiguration;
-  availableColors: ColorOption[];
+  availableBodyColors: ColorOption[];
+  availableWheelColors: ColorOption[];
+  availableBrakeColors: ColorOption[];
   availableExtras: ExtraOption[];
-  onColorChange: (color: ColorOption) => void;
+  onBodyColorChange: (color: ColorOption) => void;
+  onWheelColorChange: (color: ColorOption) => void;
+  onBrakeColorChange: (color: ColorOption) => void;
   onExtrasChange: (extras: ExtraOption[]) => void;
 }
 
@@ -19,9 +23,13 @@ interface ConfigPanelProps {
  */
 export default function ConfigPanel({
   configuration,
-  availableColors,
+  availableBodyColors,
+  availableWheelColors,
+  availableBrakeColors,
   availableExtras,
-  onColorChange,
+  onBodyColorChange,
+  onWheelColorChange,
+  onBrakeColorChange,
   onExtrasChange,
 }: ConfigPanelProps) {
   const [activeTab, setActiveTab] = useState<'customize' | 'extras'>('customize');
@@ -40,11 +48,12 @@ export default function ConfigPanel({
   };
 
   return (
-    <div className="h-full flex flex-col ">
+    <div className="h-full flex flex-col">
       {/* Header */}
       <div className="p-6 border-b border-zinc-800">
         <h2 className="text-2xl font-bold text-gray-100">Configure Your Car</h2>
         <p className="text-sm mt-1 text-gray-400">{configuration.carModel}</p>
+        <PriceCalculator configuration={configuration} />
       </div>
 
       {/* Tabs */}
@@ -84,11 +93,28 @@ export default function ConfigPanel({
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         {activeTab === 'customize' ? (
           <>
-            {/* Color Picker */}
+            {/* Body Color Picker */}
+            <h3 className="text-lg font-semibold text-gray-100">Exterior Color</h3>
             <ColorPicker
-              colors={availableColors}
-              selectedColorId={configuration.color.id}
-              onColorChange={onColorChange}
+              colors={availableBodyColors}
+              selectedColorId={configuration.bodyColor.id}
+              onColorChange={onBodyColorChange}
+            />
+
+            {/* Wheel Color Picker */}
+            <h3 className="text-lg font-semibold text-gray-100">Wheel Color</h3>
+            <ColorPicker
+              colors={availableWheelColors}
+              selectedColorId={configuration.wheelColor.id}
+              onColorChange={onWheelColorChange}
+            />
+
+            {/* Brake Color Picker */}
+            <h3 className="text-lg font-semibold text-gray-100">Brake Color</h3>
+            <ColorPicker
+              colors={availableBrakeColors}
+              selectedColorId={configuration.brakeColor.id}
+              onColorChange={onBrakeColorChange}
             />
           </>
         ) : (

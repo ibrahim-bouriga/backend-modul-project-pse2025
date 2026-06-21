@@ -14,8 +14,7 @@ interface ColorPickerProps {
  */
 export default function ColorPicker({ colors, selectedColorId, onColorChange }: ColorPickerProps) {
   return (
-    <div className="space-y-3">
-      <h3 className="text-lg font-semibold text-gray-100">Exterior Color</h3>
+    <div className="mb-3">
       
       <div className="grid grid-cols-3 gap-3">
         {colors.map((color) => {
@@ -74,27 +73,6 @@ export default function ColorPicker({ colors, selectedColorId, onColorChange }: 
             </button>
           );
         })}
-      </div>
-      
-      {/* Selected Color Info */}
-      <div className="mt-4 p-3 bg-zinc-800 rounded-lg">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-100">
-              Selected: {colors.find(c => c.id === selectedColorId)?.name}
-            </p>
-            <p className="text-xs text-gray-400 mt-1">
-              {colors.find(c => c.id === selectedColorId)?.hex}
-            </p>
-          </div>
-          {colors.find(c => c.id === selectedColorId)?.price! > 0 && (
-            <div className="text-right">
-              <p className="text-sm font-semibold text-blue-400">
-                +${colors.find(c => c.id === selectedColorId)?.price.toLocaleString()}
-              </p>
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );
