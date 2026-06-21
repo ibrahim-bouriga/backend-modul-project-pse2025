@@ -23,10 +23,29 @@ services:
     build:
       context: ./packages/frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_MQTT_BROKER_HOST: "${MQTT_BROKER_HOST:-localhost}"
+        NEXT_PUBLIC_MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+        NEXT_PUBLIC_MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
+    image: nextjs-standalone-image
+    container_name: nextjs-standalone-container
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - backend
+    restart: unless-stopped
+
+  ngrok:
+    profiles: ["prod"]
+    image: ngrok/ngrok:latest
+    command: http frontend:3000
+    environment:
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    depends_on:
+      - frontend
     restart: unless-stopped
 
   mosquitto:
@@ -78,8 +97,23 @@ services:
       retries: 5
     restart: unless-stopped
 
+  redis:
+    profiles: ["dev", "prod"]
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
   postgres_data:
   mosquitto_data:
   mosquitto_log:
   minio_data:
+  redis_data:
