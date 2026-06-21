@@ -3,12 +3,24 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "npx http-server ./public -p 3000 -o",
-    "build": "tsc"
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000"
+  },
+  "dependencies": {
+    "mqtt": "^5.10.1",
+    "next": "^14.2.20",
+    "qrcode": "^1.5.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "three": "^0.168.0"
   },
   "devDependencies": {
     "@types/node": "^20.10.6",
-    "http-server": "^14.1.1",
+    "@types/qrcode": "^1.5.5",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.184.1",
     "typescript": "^5.3.3"
   }
 }
