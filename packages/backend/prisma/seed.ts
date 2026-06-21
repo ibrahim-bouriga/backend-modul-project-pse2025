@@ -46,120 +46,127 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('Starting database seed...');
+  console.log('Note: This seed script is idempotent and safe to run multiple times.');
 
   // ============================================
   // 1. SEED CAR MODELS
   // ============================================
   console.log('Seeding car models...');
 
-  const thunderGT = await prisma.car.create({
-    data: {
-      make: 'PSE Motors',
-      model: 'Thunder GT',
-      year: 2025,
-      description: 'The Thunder GT combines raw power with refined elegance. Featuring a twin-turbo V8 engine producing 650 horsepower, this grand tourer delivers exhilarating performance while maintaining supreme comfort for long-distance cruising.',
-      basePrice: 89999.00,
-      imageUrl: '/images/cars/thunder-gt.jpg',
-      specs: {
-        horsepower: 650,
-        topSpeed: 320,
-        acceleration: 3.2,
-        weight: 1650,
-        engine: 'Twin-Turbo V8',
-        transmission: '8-Speed Automatic',
-        drivetrain: 'AWD'
+  // Helper function to find or create car
+  const findOrCreateCar = async (carData: any) => {
+    const existing = await prisma.car.findFirst({
+      where: {
+        make: carData.make,
+        model: carData.model,
+        year: carData.year,
       },
-      available: true,
+    });
+    if (existing) {
+      console.log(`  - Car already exists: ${carData.make} ${carData.model} ${carData.year}`);
+      return existing;
+    }
+    return await prisma.car.create({ data: carData });
+  };
+
+  const thunderGT = await findOrCreateCar({
+    make: 'PSE Motors',
+    model: 'Thunder GT',
+    year: 2025,
+    description: 'The Thunder GT combines raw power with refined elegance. Featuring a twin-turbo V8 engine producing 650 horsepower, this grand tourer delivers exhilarating performance while maintaining supreme comfort for long-distance cruising.',
+    basePrice: 89999.00,
+    imageUrl: '/images/cars/thunder-gt.jpg',
+    specs: {
+      horsepower: 650,
+      topSpeed: 320,
+      acceleration: 3.2,
+      weight: 1650,
+      engine: 'Twin-Turbo V8',
+      transmission: '8-Speed Automatic',
+      drivetrain: 'AWD'
     },
+    available: true,
   });
 
-  const hyperion = await prisma.car.create({
-    data: {
-      make: 'PSE Motors',
-      model: 'Hyperion',
-      year: 2025,
-      description: 'The Hyperion represents the pinnacle of automotive engineering. With a hybrid powertrain delivering over 1000 horsepower, advanced aerodynamics, and cutting-edge technology, this hypercar redefines what\'s possible on four wheels.',
-      basePrice: 299999.00,
-      imageUrl: '/images/cars/hyperion.jpg',
-      specs: {
-        horsepower: 1050,
-        topSpeed: 380,
-        acceleration: 2.1,
-        weight: 1450,
-        engine: 'Hybrid V12 + Electric Motors',
-        transmission: '7-Speed Dual-Clutch',
-        drivetrain: 'AWD'
-      },
-      available: true,
+  const hyperion = await findOrCreateCar({
+    make: 'PSE Motors',
+    model: 'Hyperion',
+    year: 2025,
+    description: 'The Hyperion represents the pinnacle of automotive engineering. With a hybrid powertrain delivering over 1000 horsepower, advanced aerodynamics, and cutting-edge technology, this hypercar redefines what\'s possible on four wheels.',
+    basePrice: 299999.00,
+    imageUrl: '/images/cars/hyperion.jpg',
+    specs: {
+      horsepower: 1050,
+      topSpeed: 380,
+      acceleration: 2.1,
+      weight: 1450,
+      engine: 'Hybrid V12 + Electric Motors',
+      transmission: '7-Speed Dual-Clutch',
+      drivetrain: 'AWD'
     },
+    available: true,
   });
 
-  const urbanE = await prisma.car.create({
-    data: {
-      make: 'PSE Motors',
-      model: 'Urban-E',
-      year: 2025,
-      description: 'The Urban-E is our vision for sustainable urban mobility. This fully electric compact car offers impressive range, quick charging, and smart city features, all wrapped in a stylish and practical package perfect for modern city living.',
-      basePrice: 42999.00,
-      imageUrl: '/images/cars/urban-e.jpg',
-      specs: {
-        horsepower: 250,
-        topSpeed: 180,
-        acceleration: 5.8,
-        weight: 1750,
-        engine: 'Dual Electric Motors',
-        transmission: 'Single-Speed',
-        drivetrain: 'AWD',
-        range: 450,
-        batteryCapacity: 85
-      },
-      available: true,
+  const urbanE = await findOrCreateCar({
+    make: 'PSE Motors',
+    model: 'Urban-E',
+    year: 2025,
+    description: 'The Urban-E is our vision for sustainable urban mobility. This fully electric compact car offers impressive range, quick charging, and smart city features, all wrapped in a stylish and practical package perfect for modern city living.',
+    basePrice: 42999.00,
+    imageUrl: '/images/cars/urban-e.jpg',
+    specs: {
+      horsepower: 250,
+      topSpeed: 180,
+      acceleration: 5.8,
+      weight: 1750,
+      engine: 'Dual Electric Motors',
+      transmission: 'Single-Speed',
+      drivetrain: 'AWD',
+      range: 450,
+      batteryCapacity: 85
     },
+    available: true,
   });
 
-  const sportX = await prisma.car.create({
-    data: {
-      make: 'PSE Motors',
-      model: 'Sport-X',
-      year: 2025,
-      description: 'The Sport-X is the ultimate performance SUV. Combining the practicality of an SUV with the heart of a sports car, it features a powerful engine, sport-tuned suspension, and luxurious interior that seats five in comfort.',
-      basePrice: 74999.00,
-      imageUrl: '/images/cars/sport-x.jpg',
-      specs: {
-        horsepower: 500,
-        topSpeed: 270,
-        acceleration: 4.2,
-        weight: 2100,
-        engine: 'Supercharged V6',
-        transmission: '8-Speed Automatic',
-        drivetrain: 'AWD'
-      },
-      available: true,
+  const sportX = await findOrCreateCar({
+    make: 'PSE Motors',
+    model: 'Sport-X',
+    year: 2025,
+    description: 'The Sport-X is the ultimate performance SUV. Combining the practicality of an SUV with the heart of a sports car, it features a powerful engine, sport-tuned suspension, and luxurious interior that seats five in comfort.',
+    basePrice: 74999.00,
+    imageUrl: '/images/cars/sport-x.jpg',
+    specs: {
+      horsepower: 500,
+      topSpeed: 270,
+      acceleration: 4.2,
+      weight: 2100,
+      engine: 'Supercharged V6',
+      transmission: '8-Speed Automatic',
+      drivetrain: 'AWD'
     },
+    available: true,
   });
 
-  const classicRoadster = await prisma.car.create({
-    data: {
-      make: 'PSE Motors',
-      model: 'Classic Roadster',
-      year: 2025,
-      description: 'A modern interpretation of classic roadster design. The Classic Roadster offers pure driving pleasure with its lightweight construction, naturally aspirated engine, and manual transmission. Perfect for enthusiasts who appreciate the art of driving.',
-      basePrice: 54999.00,
-      imageUrl: '/images/cars/classic-roadster.jpg',
-      specs: {
-        horsepower: 320,
-        topSpeed: 250,
-        acceleration: 4.8,
-        weight: 1250,
-        engine: 'Naturally Aspirated Inline-6',
-        transmission: '6-Speed Manual',
-        drivetrain: 'RWD'
-      },
-      available: true,
+  const classicRoadster = await findOrCreateCar({
+    make: 'PSE Motors',
+    model: 'Classic Roadster',
+    year: 2025,
+    description: 'A modern interpretation of classic roadster design. The Classic Roadster offers pure driving pleasure with its lightweight construction, naturally aspirated engine, and manual transmission. Perfect for enthusiasts who appreciate the art of driving.',
+    basePrice: 54999.00,
+    imageUrl: '/images/cars/classic-roadster.jpg',
+    specs: {
+      horsepower: 320,
+      topSpeed: 250,
+      acceleration: 4.8,
+      weight: 1250,
+      engine: 'Naturally Aspirated Inline-6',
+      transmission: '6-Speed Manual',
+      drivetrain: 'RWD'
     },
+    available: true,
   });
 
-  console.log(`Created ${5} car models`);
+  console.log(`Processed ${5} car models`);
 
   // ============================================
   // 2. SEED CAR CONFIGURATIONS
@@ -330,8 +337,12 @@ async function main() {
   // ============================================
   console.log('Seeding user vehicles...');
 
-  const userVehicle1 = await prisma.userVehicle.create({
-    data: {
+  const userVehicle1 = await prisma.userVehicle.upsert({
+    where: {
+      vin: 'PSE2025TGT1234567',
+    },
+    update: {},
+    create: {
       userId: 'user_demo_001',
       carId: thunderGT.id,
       nickname: 'My Thunder',
@@ -340,8 +351,12 @@ async function main() {
     },
   });
 
-  const userVehicle2 = await prisma.userVehicle.create({
-    data: {
+  const userVehicle2 = await prisma.userVehicle.upsert({
+    where: {
+      vin: 'PSE2025URE7654321',
+    },
+    update: {},
+    create: {
       userId: 'user_demo_001',
       carId: urbanE.id,
       nickname: 'City Cruiser',
@@ -350,8 +365,12 @@ async function main() {
     },
   });
 
-  const userVehicle3 = await prisma.userVehicle.create({
-    data: {
+  const userVehicle3 = await prisma.userVehicle.upsert({
+    where: {
+      vin: 'PSE2025SPX9876543',
+    },
+    update: {},
+    create: {
       userId: 'user_demo_002',
       carId: sportX.id,
       nickname: 'Family Rocket',
@@ -360,7 +379,7 @@ async function main() {
     },
   });
 
-  console.log('Created 3 user vehicles');
+  console.log('Upserted 3 user vehicles');
 
   // ============================================
   // 5. SEED INITIAL VEHICLE STATUS
@@ -406,8 +425,19 @@ async function main() {
   // ============================================
   console.log('Seeding super car for World Drive...');
 
-  await prisma.superCar.create({
-    data: {
+  await prisma.superCar.upsert({
+    where: {
+      name: 'PSE Hyperion World Tour',
+    },
+    update: {
+      latitude: 52.5200, // Berlin
+      longitude: 13.4050,
+      speed: 0,
+      heading: 90, // East
+      timestamp: new Date(),
+      active: true,
+    },
+    create: {
       name: 'PSE Hyperion World Tour',
       latitude: 52.5200, // Berlin
       longitude: 13.4050,
@@ -418,7 +448,7 @@ async function main() {
     },
   });
 
-  console.log('Created super car entry');
+  console.log('Created/updated super car entry');
 
   console.log('\nDatabase seed completed successfully!');
   console.log('\nSummary:');
