@@ -16,16 +16,41 @@ export default function GyroController() {
 
   const [status, setStatus] = useState<Status>("idle");
   const [tilt, setTilt] = useState({ beta: 0, gamma: 0 });
+  // Zeigt dem Nutzer kurz "Kalibriert!" nach Knopfdruck, kein
+  // funktionaler State, nur visuelles Feedback.
+  const [justCalibrated, setJustCalibrated] = useState(false);
+  // Steuert, ob das Gerät aktuell im Portrait-Modus ist. Wird genutzt, um
+  // sowohl die UI zu blockieren als auch das Publizieren der Gyro-Daten
+  // zu unterbrechen – ein reines UI-Overlay würde das Senden im Hintergrund
+  // nicht verhindern.
+  const [isPortrait, setIsPortrait] = useState(true);
 
   const clientRef = useRef<MqttClient | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gyroRef = useRef({ beta: 0, gamma: 0 });
   const mountedRef = useRef(true);
+  // isPortrait als Ref gespiegelt, damit der setInterval-Callback (der
+  // außerhalb des Render-Zyklus läuft) immer den aktuellen Wert sieht,
+  // ohne dass das Interval bei jeder Orientierungsänderung neu gestartet
+  // werden muss.
+  const isPortraitRef = useRef(true);
 
   useEffect(() => {
     mountedRef.current = true;
+
+    // matchMedia reagiert live auf Drehungen, ohne dass man resize-Events
+    // manuell debouncen muss – breit unterstützt in mobilen Browsern.
+    const mql = window.matchMedia("(orientation: portrait)");
+    const updateOrientation = (e: MediaQueryList | MediaQueryListEvent) => {
+      isPortraitRef.current = e.matches;
+      if (mountedRef.current) setIsPortrait(e.matches);
+    };
+    updateOrientation(mql);
+    mql.addEventListener("change", updateOrientation);
+
     return () => {
       mountedRef.current = false;
+      mql.removeEventListener("change", updateOrientation);
       cleanup();
     };
   }, []);
@@ -35,6 +60,23 @@ export default function GyroController() {
     intervalRef.current = null;
     clientRef.current?.end(true);
     clientRef.current = null;
+  }
+
+  // Sendet ein Kalibrierungs-Signal an die Desktop-Seite. Payload enthält
+  // bewusst keine beta/gamma-Werte – die Desktop-Seite kennt die aktuell
+  // letzten empfangenen Rohwerte bereits aus dem laufenden Gyro-Stream und
+  // übernimmt genau diese als neuen Nullpunkt. Das vermeidet eine Race-
+  // Condition zwischen zwei separaten Topics mit potenziell unterschiedlichem
+  // Timing.
+  function calibrate() {
+    if (!clientRef.current || status !== "connected" || isPortraitRef.current)
+      return;
+    clientRef.current.publish(
+      `${TOPIC_PREFIX}/${sessionId}/calibrate`,
+      JSON.stringify({ timestamp: Date.now() }),
+    );
+    setJustCalibrated(true);
+    setTimeout(() => setJustCalibrated(false), 1500);
   }
 
   async function start() {
@@ -61,11 +103,28 @@ export default function GyroController() {
     }
 
     // Gyro-Daten lesen
+    // EMPIRISCH VERIFIZIERT (nicht mehr vermutet): DeviceOrientationEvent.beta
+    // misst die Vorne/Hinten-Neigung relativ zum GERÄT, nicht zum Bildschirm.
+    // Im Landscape liegt das Gerät auf der Seite, wodurch "nach vorne neigen"
+    // (visuell) physikalisch eine Drehung ist, die der Sensor überwiegend als
+    // gamma-Änderung registriert, nicht als beta-Änderung. Gemessene Werte:
+    //   flach:           beta≈2,  gamma≈0
+    //   nach vorne:       beta≈1,  gamma≈17   → gamma reagiert, nicht beta
+    //   nach rechts:      beta≈24, gamma≈63   → beta reagiert auf Lenkung
+    // Daher: throttle aus gamma, steering aus beta (vertauscht ggü. Portrait).
     const onOrientation = (e: DeviceOrientationEvent) => {
-      const b = e.beta ?? 0;
-      const g = e.gamma ?? 0;
-      gyroRef.current = { beta: b, gamma: g };
-      if (mountedRef.current) setTilt({ beta: Math.round(b), gamma: Math.round(g) });
+      const rawBeta = e.beta ?? 0;
+      const rawGamma = e.gamma ?? 0;
+
+      // Vertauscht: "vorwärts" (für throttle) kommt aus gamma,
+      // "lenken" (für steering) kommt aus beta.
+      const forward = rawGamma;
+      const steer = rawBeta;
+
+      gyroRef.current = { beta: forward, gamma: steer };
+      if (mountedRef.current) {
+        setTilt({ beta: Math.round(forward), gamma: Math.round(steer) });
+      }
     };
     window.addEventListener("deviceorientation", onOrientation);
 
@@ -81,18 +140,31 @@ export default function GyroController() {
       if (!mountedRef.current) return;
       setStatus("connected");
       const topic = `${TOPIC_PREFIX}/${sessionId}/gyro`;
-      intervalRef.current = setInterval(() => {
-        const { beta, gamma } = gyroRef.current;
-        client.publish(
-          topic,
-          JSON.stringify({ beta, gamma, timestamp: Date.now() })
-        );
-      }, Math.round(1000 / PUBLISH_HZ));
+      intervalRef.current = setInterval(
+        () => {
+          // Im Portrait-Modus wird nichts gesendet – verhindert, dass beim
+          // Drehen des Geräts kurzzeitig unbeabsichtigte Werte durchrutschen,
+          // und stellt sicher, dass die Blockade nicht nur kosmetisch ist.
+          if (isPortraitRef.current) return;
+          const { beta, gamma } = gyroRef.current;
+          client.publish(
+            topic,
+            JSON.stringify({ beta, gamma, timestamp: Date.now() }),
+          );
+        },
+        Math.round(1000 / PUBLISH_HZ),
+      );
     });
 
-    client.on("reconnect", () => { if (mountedRef.current) setStatus("connecting"); });
-    client.on("connect", () => { if (mountedRef.current) setStatus("connected"); });
-    client.on("error", () => { if (mountedRef.current) setStatus("error"); });
+    client.on("reconnect", () => {
+      if (mountedRef.current) setStatus("connecting");
+    });
+    client.on("connect", () => {
+      if (mountedRef.current) setStatus("connected");
+    });
+    client.on("error", () => {
+      if (mountedRef.current) setStatus("error");
+    });
     client.on("offline", () => {
       if (mountedRef.current) setStatus("connecting");
     });
@@ -103,7 +175,8 @@ export default function GyroController() {
 
   const isHttps =
     typeof window !== "undefined" &&
-    (window.location.protocol === "https:" || window.location.hostname === "localhost");
+    (window.location.protocol === "https:" ||
+      window.location.hostname === "localhost");
 
   if (!sessionId) {
     return (
@@ -119,6 +192,8 @@ export default function GyroController() {
 
   return (
     <div style={pageStyle}>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+
       <h2 style={{ margin: "0 0 28px", fontSize: 22, letterSpacing: 1 }}>
         Auto steuern
       </h2>
@@ -157,36 +232,57 @@ export default function GyroController() {
         </div>
       )}
 
-      {status === "connected" && (
+      {status === "connected" && isPortrait && (
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 64, marginBottom: 16 }}>📱↻</div>
+          <p style={{ fontSize: 18, marginBottom: 8, fontWeight: 600 }}>
+            Bitte Handy drehen
+          </p>
+          <p style={{ fontSize: 14, color: "#aaa", lineHeight: 1.6 }}>
+            Die Steuerung funktioniert nur im
+            <br />
+            Querformat (Landscape).
+          </p>
+        </div>
+      )}
+
+      {status === "connected" && !isPortrait && (
         <div style={{ textAlign: "center" }}>
           <div style={{ fontSize: 56, marginBottom: 8 }}>✓</div>
           <p style={{ color: "#4caf50", margin: "0 0 28px", fontSize: 18 }}>
             Verbunden
           </p>
 
-          {/* Visuelles Tilt-Display */}
-          <TiltDisplay beta={tilt.beta} gamma={tilt.gamma} />
-
-          <div
+          {/* Kalibrierungs-Button */}
+          <button
+            onClick={calibrate}
             style={{
-              fontFamily: "monospace",
-              fontSize: 14,
-              color: "#bbb",
-              marginTop: 20,
-              lineHeight: 2,
+              ...calibrateBtnStyle,
+              background: justCalibrated ? "#4caf50" : "#2a2a3e",
             }}
           >
-            β {tilt.beta > 0 ? "+" : ""}{tilt.beta}° — Gas/Bremse
-            <br />
-            γ {tilt.gamma > 0 ? "+" : ""}{tilt.gamma}° — Lenken
-          </div>
+            {justCalibrated
+              ? "✓ Kalibriert"
+              : "Aktuelle Haltung als Mitte festlegen"}
+          </button>
 
-          <p style={{ fontSize: 12, color: "#666", marginTop: 24, lineHeight: 1.6 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: "#666",
+              marginTop: 24,
+              lineHeight: 1.6,
+            }}
+          >
             Handy nach vorne neigen = Gas
             <br />
             Rückwärts neigen = Bremse
             <br />
             Links/rechts kippen = Lenken
+            <br />
+            <br />
+            Halte das Handy in deiner bevorzugten Griffposition und tippe oben,
+            um sie als neutrale Mitte zu setzen.
           </p>
         </div>
       )}
@@ -203,45 +299,6 @@ export default function GyroController() {
           </button>
         </div>
       )}
-    </div>
-  );
-}
-
-// Zeigt Handy-Neigung als Ball in einem Quadrat
-function TiltDisplay({ beta, gamma }: { beta: number; gamma: number }) {
-  const TILT_MAX = 30;
-  const clamp = (v: number) => Math.max(-1, Math.min(1, v / TILT_MAX));
-  const x = 50 + clamp(gamma) * 45; // 5% … 95%
-  const y = 50 - clamp(beta) * 45;
-
-  return (
-    <div
-      style={{
-        width: 140,
-        height: 140,
-        border: "2px solid #333",
-        borderRadius: 12,
-        position: "relative",
-        margin: "0 auto",
-        background: "#1a1a2e",
-      }}
-    >
-      {/* Kreuz-Linien */}
-      <div style={{ position: "absolute", top: "50%", left: 0, right: 0, borderTop: "1px solid #333" }} />
-      <div style={{ position: "absolute", left: "50%", top: 0, bottom: 0, borderLeft: "1px solid #333" }} />
-      {/* Ball */}
-      <div
-        style={{
-          position: "absolute",
-          width: 20,
-          height: 20,
-          borderRadius: "50%",
-          background: "#4caf50",
-          left: `calc(${x}% - 10px)`,
-          top: `calc(${y}% - 10px)`,
-          transition: "left 0.05s, top 0.05s",
-        }}
-      />
     </div>
   );
 }
@@ -287,4 +344,17 @@ const btnStyle: React.CSSProperties = {
   cursor: "pointer",
   fontWeight: 600,
   letterSpacing: 0.5,
+};
+
+const calibrateBtnStyle: React.CSSProperties = {
+  marginTop: 24,
+  padding: "12px 24px",
+  fontSize: 15,
+  color: "#fff",
+  border: "1px solid #444",
+  borderRadius: 10,
+  cursor: "pointer",
+  fontWeight: 600,
+  letterSpacing: 0.3,
+  transition: "background 0.2s",
 };

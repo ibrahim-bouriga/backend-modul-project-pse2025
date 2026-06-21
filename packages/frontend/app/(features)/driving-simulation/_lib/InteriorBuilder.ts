@@ -240,8 +240,22 @@ export function buildInterior(): InteriorParts {
     ),
   );
 
-  const rearviewSurface = mirrorPlane(0.19, 0.05);
-  rearviewSurface.position.set(0, mirrorMountY, mirrorMountZ + 0.016);
+  const rearviewSurface = mirrorPlane(0.215, 0.067);
+  // Fläche nochmals erhöht, nahezu auf volle Halterungsgröße (0.22 x 0.07) -
+  // vorheriger Versuch (0.205 x 0.06) liess weiterhin einen sichtbaren Rand.
+  // Nur noch ca. 2-3mm Rand auf jeder Seite als minimaler "Rahmen"-Look.
+  // Abstand zur Halterung deutlich vergrößert: vorher nur 0.016 (1.6mm) vor
+  // der Halterungs-Vorderkante (Halterungstiefe 0.03 → Vorderkante bei
+  // mirrorMountZ+0.015) - das war zu knapp, die Halterung konnte die
+  // Spiegelfläche je nach Blickwinkel der Hauptkamera überdecken. Jetzt
+  // 0.04 (4cm) Abstand zur Halterungsmitte, klar sichtbar davor.
+  // Abstand zur Halterung: 0.025 (statt vorher 0.04) - reduziert, um die
+  // Parallaxen-Verschiebung bei schrägem Blickwinkel (Kamera sitzt bei
+  // DRIVER_X=-0.30, nicht zentriert) zu minimieren, bei der die Fläche
+  // relativ zur Halterungsöffnung leicht verschoben wirken kann, je weiter
+  // sie davor schwebt. Bleibt weiterhin klar über dem ursprünglichen,
+  // zu knappen Wert von 0.016, der zum Verdecken führte.
+  rearviewSurface.position.set(0, mirrorMountY, mirrorMountZ + 0.025);
   rearviewSurface.rotation.x = WS_TILT;
   group.add(rearviewSurface);
 

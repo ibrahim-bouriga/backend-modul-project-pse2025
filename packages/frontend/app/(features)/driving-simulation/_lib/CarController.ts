@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { CarInput, CarModel, ICarController } from "./types";
 import { DRIVER_X, buildInterior } from "./InteriorBuilder";
 
-const MAX_SPEED = 18; // m/s ≈ 65 km/h
+const MAX_SPEED = 33.3; // m/s ≈ 120 km/h
 const ACCELERATION = 12;
 const DECELERATION = 8;
 const TURN_SPEED = 1.4; // rad/s bei voller Lenkung und Maximalgeschwindigkeit
@@ -21,10 +21,15 @@ export class CarController implements ICarController {
     camera.rotation.set(0, 0, 0);
     this.root.add(camera);
 
-    // Fallback: eigener Innenraum, falls kein CarModel übergeben wird
-    const { group, steeringWheel } = buildInterior();
-    this.root.add(group);
-    this.steeringWheel = steeringWheel;
+    // KEIN automatischer Fallback-Innenraum mehr hier: World.tsx baut den
+    // Innenraum explizit via buildInterior() und ruft setSteeringWheel()
+    // auf. Der vorherige Konstruktor-Fallback erzeugte einen ZWEITEN,
+    // separaten Innenraum inkl. Lenkrad, der nie entfernt wurde - nur die
+    // steeringWheel-Referenz wurde überschrieben, das erste (jetzt verwaiste)
+    // Lenkrad blieb sichtbar in der Ausgangsposition stehen, da es nie
+    // animiert wurde. Falls CarController jemals ohne World.tsx-Integration
+    // genutzt wird, muss der Aufrufer selbst buildInterior() + add() +
+    // setSteeringWheel() aufrufen.
   }
 
   setSteeringWheel(wheel: THREE.Object3D): void {
@@ -60,16 +65,34 @@ export class CarController implements ICarController {
   }
 
   update(delta: number, input: CarInput): void {
-    // Geschwindigkeit
-    if (input.throttle !== 0) {
-      const accel = ACCELERATION * Math.abs(input.throttle) * delta;
-      this.speed += input.throttle > 0 ? accel : -accel;
-      this.speed = THREE.MathUtils.clamp(
-        this.speed,
-        -MAX_SPEED * 0.3,
-        MAX_SPEED,
-      );
-    } else {
+    // Geschwindigkeit: throttle bestimmt jetzt eine ZIELGESCHWINDIGKEIT
+    // (proportional zu MAX_SPEED), nicht mehr nur die Beschleunigungsrate.
+    // Vorher akkumulierte sich speed kontinuierlich weiter, solange
+    // throttle != 0 war – das machte es unmöglich, eine konstante
+    // Zwischengeschwindigkeit zu halten, da man immer Richtung MAX_SPEED
+    // weiterbeschleunigte. Jetzt: 50% Neigung → Zielgeschwindigkeit 50%
+    // von MAX_SPEED, das Auto nähert sich diesem Wert an und HÄLT ihn,
+    // solange die Neigung konstant bleibt.
+    const targetSpeed =
+      input.throttle > 0
+        ? input.throttle * MAX_SPEED
+        : input.throttle * MAX_SPEED * 0.3; // Rückwärts langsamer, wie zuvor
+
+    if (Math.abs(targetSpeed - this.speed) > 0.001) {
+      // Beschleunigung UND Abbremsen Richtung Zielgeschwindigkeit verwenden
+      // dieselbe Rate (ACCELERATION) – das Fahrzeug nähert sich dem Ziel
+      // unabhängig davon, ob es schneller oder langsamer werden muss.
+      const rate = ACCELERATION * delta;
+      if (this.speed < targetSpeed) {
+        this.speed = Math.min(this.speed + rate, targetSpeed);
+      } else {
+        this.speed = Math.max(this.speed - rate, targetSpeed);
+      }
+    }
+
+    // Falls throttle = 0 (Neigung innerhalb der Deadzone): natürliches
+    // Ausrollen statt sofortigem Stillstand bei der Zielgeschwindigkeit 0.
+    if (input.throttle === 0 && Math.abs(this.speed) > 0.001) {
       const decay = DECELERATION * delta;
       this.speed =
         Math.abs(this.speed) < decay
