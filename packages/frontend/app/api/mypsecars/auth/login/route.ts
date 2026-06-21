@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-type User = { username: string; password: string };
+type User = { username: string; password: string; carId: string };
 
 const USERS_FILE = path.join(
   process.cwd(),
