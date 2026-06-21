@@ -4,8 +4,8 @@
 
 | Profile | Services started | Use when |
 |---|---|---|
-| `dev` | postgres, mosquitto, minio | Developing locally — run backend/frontend natively, just need the infrastructure |
-| `prod` | postgres, mosquitto, minio, backend, frontend | Running the full stack (e.g. staging, production, or a full local smoke test) |
+| `dev` | postgres, mosquitto, minio, redis | Developing locally — run backend/frontend natively, just need the infrastructure |
+| `prod` | postgres, mosquitto, minio, redis, backend, frontend | Running the full stack (e.g. staging, production, or a full local smoke test) |
 
 ## Commands
 
@@ -39,7 +39,25 @@ Omit `-d` when you want to watch logs while testing. Use `-d` once things are st
 
 ```sh
 docker compose logs -f postgres     # follow postgres logs
+docker compose logs -f redis        # follow redis logs
 docker compose logs -f              # follow all services
+```
+
+## Services
+
+### Redis
+
+Redis is used for caching and session management.
+
+**Port:** `6379` (configurable via `REDIS_PORT` in `.env`)
+
+**Health check:** Runs `redis-cli ping` every 10 seconds
+
+**Data persistence:** Stored in the `redis_data` volume
+
+**Access Redis CLI:**
+```sh
+docker compose exec redis redis-cli
 ```
 
 ## Automatic migrations
