@@ -7,7 +7,7 @@ router.get('/', (_req, res) => {
   const telemetry = getTelemetry();
 
   if (!telemetry) {
-    res.status(404).json({ error: 'No telemetry data received yet' });
+    res.status(204).json({info: 'No telemetry data received yet' });
     return;
   }
 

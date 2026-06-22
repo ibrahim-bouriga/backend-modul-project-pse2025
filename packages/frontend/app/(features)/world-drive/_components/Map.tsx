@@ -174,7 +174,7 @@ export default function LeafletMap({ initialCenter, position, follow, trail }: L
     <MapContainer
       center={initialCenter}
       zoom={14}
-      style={{ height: "70vh", minHeight: "500px", width: "100%", borderRadius: "12px" }}
+      style={{ height: "100%", width: "100%" }}
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
