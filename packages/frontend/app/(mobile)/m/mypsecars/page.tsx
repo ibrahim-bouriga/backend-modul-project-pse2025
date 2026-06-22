@@ -10,7 +10,7 @@ const TOPIC_POS   = "psecars/mypsecars/position";
 type MqttStatus = "connecting" | "connected" | "error" | "idle";
 type GpsStatus  = "idle" | "active" | "error";
 
-export default function PhonePage() {
+export default function MyPSECarsMobilePage() {
   const [mqttStatus, setMqttStatus] = useState<MqttStatus>("connecting");
   const [gpsStatus,  setGpsStatus]  = useState<GpsStatus>("idle");
   const [coords,     setCoords]     = useState<{ lat: number; lng: number; accuracy: number } | null>(null);

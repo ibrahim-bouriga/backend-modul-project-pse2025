@@ -4,7 +4,7 @@ import { getTunnelUrl } from "../../../_lib/tunnel";
 // Server Component — calls getTunnelUrl() directly (no useEffect needed)
 export default async function PhoneQRCode() {
   const tunnelUrl = await getTunnelUrl();
-  const phoneUrl  = tunnelUrl ? `${tunnelUrl}/MyPSECar/phone` : null;
+  const phoneUrl  = tunnelUrl ? `${tunnelUrl}/m/mypsecars` : null;
 
   return (
     <div className="space-y-4">
@@ -46,8 +46,8 @@ export default async function PhoneQRCode() {
           </p>
           <p className="text-zinc-600 text-xs mt-1">
             Lokal testen:{" "}
-            <a href="/MyPSECar/phone" className="underline hover:text-white" target="_blank">
-              /MyPSECar/phone
+            <a href="/m/mypsecars" className="underline hover:text-white" target="_blank">
+              /m/mypsecars
             </a>
           </p>
         </div>
