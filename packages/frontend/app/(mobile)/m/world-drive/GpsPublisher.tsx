@@ -6,46 +6,36 @@ const TOPIC      = "psecars/worlddrive/telemetry";
 const BROKER_WSS = "wss://broker.hivemq.com:8884/mqtt";
 
 type MqttStatus = "connecting" | "connected" | "error" | "idle";
-type GpsStatus  = "idle" | "active" | "error";
+type GpsStatus  = "requesting" | "active" | "error";
 
 export default function GpsPublisher() {
-  const [mqttStatus,    setMqttStatus]    = useState<MqttStatus>("idle");
-  const [gpsStatus,     setGpsStatus]     = useState<GpsStatus>("idle");
-  const [coords,        setCoords]        = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
-  const [publishCount,  setPublishCount]  = useState(0);
-  const [lastPublish,   setLastPublish]   = useState<string | null>(null);
-  const [error,         setError]         = useState<string | null>(null);
+  const [mqttStatus,   setMqttStatus]   = useState<MqttStatus>("idle");
+  const [gpsStatus,    setGpsStatus]    = useState<GpsStatus>("requesting");
+  const [coords,       setCoords]       = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
+  const [publishCount, setPublishCount] = useState(0);
+  const [lastPublish,  setLastPublish]  = useState<string | null>(null);
+  const [error,        setError]        = useState<string | null>(null);
 
   const clientRef = useRef<MqttClient | null>(null);
   const watchRef  = useRef<number | null>(null);
 
   useEffect(() => {
-    setMqttStatus("connecting");
-
-    const client = mqtt.connect(BROKER_WSS, { reconnectPeriod: 5000, connectTimeout: 10_000 });
-    clientRef.current = client;
-
-    client.on("connect", () => {
-      setMqttStatus("connected");
-      setError(null);
-      startGps(client);
-    });
-
-    client.on("error", (err) => {
-      setMqttStatus("error");
-      setError(err.message);
-    });
-
-    client.on("close", () => setMqttStatus("idle"));
+    // GPS and MQTT start in parallel — permission dialog appears immediately
+    startGps();
+    connectMqtt();
 
     return () => {
-      client.end(true);
+      clientRef.current?.end(true);
       if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current);
     };
   }, []);
 
-  function startGps(client: MqttClient) {
-    if (!navigator.geolocation) { setGpsStatus("error"); setError("Geolocation not supported."); return; }
+  function startGps() {
+    if (!navigator.geolocation) {
+      setGpsStatus("error");
+      setError("Geolocation not supported.");
+      return;
+    }
 
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
@@ -53,7 +43,8 @@ export default function GpsPublisher() {
         setCoords({ lat, lng, accuracy: Math.round(accuracy) });
         setGpsStatus("active");
 
-        if (client.connected) {
+        const client = clientRef.current;
+        if (client?.connected) {
           client.publish(TOPIC, JSON.stringify({ lat, lng, speed, timestamp: new Date().toISOString() }));
           setPublishCount((c) => c + 1);
           setLastPublish(new Date().toLocaleTimeString());
@@ -64,9 +55,19 @@ export default function GpsPublisher() {
     );
   }
 
+  function connectMqtt() {
+    setMqttStatus("connecting");
+    const client = mqtt.connect(BROKER_WSS, { reconnectPeriod: 5000, connectTimeout: 10_000 });
+    clientRef.current = client;
+
+    client.on("connect", () => { setMqttStatus("connected"); setError(null); });
+    client.on("error",   (err) => { setMqttStatus("error"); setError(err.message); });
+    client.on("close",   () => setMqttStatus("idle"));
+  }
+
   const dot = (status: string) => {
     if (status === "connected" || status === "active") return "bg-green-400 animate-pulse";
-    if (status === "connecting" || status === "idle")  return "bg-yellow-400 animate-pulse";
+    if (status === "connecting" || status === "requesting" || status === "idle") return "bg-yellow-400 animate-pulse";
     return "bg-red-500";
   };
 
@@ -100,9 +101,9 @@ export default function GpsPublisher() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">GPS</p>
             <p className="text-sm text-white">
-              {gpsStatus === "idle"   && "Waiting for MQTT…"}
-              {gpsStatus === "active" && coords && `±${coords.accuracy} m accuracy`}
-              {gpsStatus === "error"  && "GPS unavailable"}
+              {gpsStatus === "requesting" && "Waiting for permission…"}
+              {gpsStatus === "active"     && coords && `±${coords.accuracy} m accuracy`}
+              {gpsStatus === "error"      && "GPS unavailable"}
             </p>
           </div>
         </div>
