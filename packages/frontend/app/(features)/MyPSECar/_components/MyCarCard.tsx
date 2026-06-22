@@ -1,8 +1,8 @@
 import Image from "next/image";
-import type { Car } from "../_lib/data";
+import type { CarModel } from "../_lib/data";
 
 interface MyCarCardProps {
-  car: Car;
+  car: CarModel;
 }
 
 export default function MyCarCard({ car }: MyCarCardProps) {
@@ -10,9 +10,10 @@ export default function MyCarCard({ car }: MyCarCardProps) {
     <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
       <div className="relative aspect-[16/9] bg-zinc-800">
         <Image
-          src={car.image}
+          src={car.imageUrl}
           alt={car.name}
           fill
+          unoptimized
           className="object-cover"
           sizes="(max-width: 896px) 100vw, 896px"
           priority

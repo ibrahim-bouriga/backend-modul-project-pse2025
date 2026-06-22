@@ -4,7 +4,7 @@ import TelemetryPanel from "./_components/TelemetryPanel";
 import PhoneQRCode from "./_components/PhoneQRCode";
 import LogoutButton from "./_components/LogoutButton";
 import MyCarCard from "./_components/MyCarCard";
-import { getUser, getCar } from "./_lib/data";
+import { getUser, getCarModel } from "./_lib/data";
 
 export default async function MyPSECarPage() {
   const cookieStore = await cookies();
@@ -36,7 +36,7 @@ export default async function MyPSECarPage() {
   }
 
   const user = getUser(username);
-  const car = user ? getCar(user.carId) : null;
+  const car = user ? await getCarModel(user.carModelId) : null;
 
   return (
     <div className="max-w-4xl mx-auto px-8 py-16 space-y-10">
@@ -58,7 +58,14 @@ export default async function MyPSECarPage() {
         <LogoutButton />
       </div>
 
-      {car && <MyCarCard car={car} />}
+      {car ? (
+        <MyCarCard car={car} />
+      ) : (
+        <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 text-zinc-400 text-sm">
+          Fahrzeugbild konnte nicht geladen werden. Läuft{" "}
+          <code className="text-zinc-300">car_models</code> auf Port 4001?
+        </div>
+      )}
 
       <div className="bg-zinc-900 rounded-2xl p-8 border border-zinc-800">
         <PhoneQRCode />
