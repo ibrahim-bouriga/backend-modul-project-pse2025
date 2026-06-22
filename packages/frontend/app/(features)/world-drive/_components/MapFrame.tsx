@@ -1,19 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { CarPosition } from "./LeafletMap";
+import type { CarPosition } from "./Map";
 
-// SSR must be disabled — Leaflet accesses browser APIs (window, document)
-const LeafletMap = dynamic(() => import("./LeafletMap"), { ssr: false });
+const Map = dynamic(() => import("./Map"), { ssr: false });
 
-const POLL_INTERVAL_LIVE_MS = 200;   // fast when car is sending data
+const POLL_INTERVAL_LIVE_MS = 100;   // fast when car is sending data
 const POLL_INTERVAL_IDLE_MS = 3000;  // slow when no signal
 const ANIM_DURATION_MS = 1000;
-const MAX_TRAIL_LENGTH = 200;
+const MAX_TRAIL_LENGTH = 100;
 
 type Status = "connecting" | "live" | "error";
 
-export default function WorldMap() {
+export default function MapFrame() {
   const [serverPosition, setServerPosition] = useState<CarPosition | null>(null);
   const [displayPosition, setDisplayPosition] = useState<CarPosition | null>(null);
   const [trail, setTrail] = useState<CarPosition[]>([]);
@@ -136,7 +135,7 @@ export default function WorldMap() {
         </div>
         <span className={`w-3 h-3 rounded-full ${statusDot[status]}`} title={status} />
       </div>
-      <LeafletMap position={displayPosition} trail={trail} />
+      <Map position={displayPosition} trail={trail} />
     </div>
   );
 }

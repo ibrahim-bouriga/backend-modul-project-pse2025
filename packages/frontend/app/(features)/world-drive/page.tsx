@@ -1,5 +1,5 @@
-import { Suspense } from "react";
-import WorldDriveApp from "./_components/WorldDriveApp";
+import MapFrameClient from "./_components/MapFrameClient";
+import QRSetup from "./_components/QRSetup";
 
 export default function WorldDrivePage() {
   return (
@@ -9,12 +9,15 @@ export default function WorldDrivePage() {
           World Drive
         </h1>
         <p className="text-zinc-400 text-base max-w-lg leading-relaxed">
-          Follow manufacturers car as it roams the globe with live GPS.
+          Follow the manufacturers super car as it roams the globe with live GPS.
         </p>
       </div>
-      <Suspense>
-        <WorldDriveApp />
-      </Suspense>
+      <div className="space-y-8">
+        <div className="bg-zinc-900 rounded-2xl p-8 border border-zinc-800">
+          <MapFrameClient />
+        </div>
+        <QRSetup />
+      </div>
     </div>
   );
 }

@@ -1,9 +1,9 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
-import L from "leaflet";
+import leaflet from "leaflet";
 
-const carIcon = L.icon({
+const carIcon = leaflet.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
@@ -29,7 +29,7 @@ function CarController({ position }: { position: CarPosition | null }) {
   const markerRef = useRef<L.Marker | null>(null);
 
   useEffect(() => {
-    markerRef.current = L.marker([48.7778, 9.18], { icon: carIcon })
+    markerRef.current = leaflet.marker([48.7778, 9.18], { icon: carIcon })
       .bindPopup("<strong>PSECars Super Car</strong>")
       .addTo(map);
     return () => {
@@ -55,11 +55,11 @@ function TrailPolyline({ trail }: { trail: CarPosition[] }) {
   const polylineRef = useRef<L.Polyline | null>(null);
 
   useEffect(() => {
-    polylineRef.current = L.polyline([], {
+    polylineRef.current = leaflet.polyline([], {
       color: "#f97316",
       weight: 5,
       opacity: 0.9,
-      renderer: L.canvas(),
+      renderer: leaflet.canvas(),
     }).addTo(map);
     return () => {
       polylineRef.current?.remove();

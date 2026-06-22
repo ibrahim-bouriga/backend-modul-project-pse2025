@@ -9,7 +9,7 @@ export default function QRSetup() {
     fetch("/api/tunnel-url")
       .then((res) => res.json())
       .then((d: { url: string | null }) => {
-        if (d.url) setQrValue(`${d.url}/world-drive?mode=gps`);
+        if (d.url) setQrValue(`${d.url}/m/world-drive`);
       })
       .catch(() => {});
   }, []);
