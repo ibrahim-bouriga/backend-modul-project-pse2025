@@ -1,3 +1,9 @@
+/*
+dataseed of merchandise-products
+upsert = update (exestiert Kategorie mir slug bereits?) + insert (wenn nein neuer EIntrag)
+*/
+
+
 import 'dotenv/config';
 import { PrismaClient } from '../src/generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -10,6 +16,7 @@ const connectionString = process.env.DATABASE_URL!;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
 
+//Hilfsfunktion return Image-string
 function productImage(slug: string): string {
     return `/products/${slug}.png`;
 }

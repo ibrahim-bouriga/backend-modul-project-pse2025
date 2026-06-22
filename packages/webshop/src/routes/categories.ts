@@ -1,3 +1,7 @@
+/*
+routes for categories
+*/
+
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 

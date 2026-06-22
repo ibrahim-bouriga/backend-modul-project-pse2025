@@ -1,3 +1,7 @@
+/*
+routes for cart
+*/
+
 import { Router, Request, Response } from 'express';
 import { z, ZodError } from 'zod';
 import { prisma } from '../db.js';
@@ -37,10 +41,10 @@ router.get('/', async (req: Request, res: Response) => {
             console.error('[Cart API] Redis unavailable, falling back to database:', redisError);
         }
 
-if (cached) {
-    res.json(JSON.parse(cached));
-    return;
-}
+    if (cached) {
+        res.json(JSON.parse(cached));
+     return;
+        }
         //wenn nicht im Cache, dann aus der DB laden
         const cart = await prisma.cart.findUnique({
             where: { sessionId },

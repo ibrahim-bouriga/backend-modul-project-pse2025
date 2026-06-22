@@ -1,5 +1,9 @@
+/*
+konfigurierte Verbindung zur Datenbank, die der Rest der App importieren kann
+*/
+
 import 'dotenv/config';
-import { PrismaClient } from './generated/prisma/client';
+import { PrismaClient } from './generated/prisma/client.js';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 const adapter = new PrismaPg({

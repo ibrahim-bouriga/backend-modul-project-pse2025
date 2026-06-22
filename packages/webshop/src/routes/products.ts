@@ -1,3 +1,7 @@
+/*
+routes for products
+*/
+
 import { Router, Request, Response } from 'express';
 import { prisma } from '../db.js';
 
@@ -5,19 +9,19 @@ const router = Router();
 
 // GET /api/products
 router.get('/', async (req: Request, res: Response) => {
-    const { category, search, sort } = req.query;
+    const { category, sort } = req.query;
 
     const products = await prisma.product.findMany({
         where: {
             isActive: true,
             ...(category ? { category: { slug: category as string } } : {}),
-            ...(search ? { name: { contains: search as string, mode: 'insensitive' } } : {}),
         },
         include: {
             category: true,
             variants: true,
         },
         orderBy:
+
             sort === 'price_asc' ? { basePrice: 'asc' }
             : sort === 'price_desc' ? { basePrice: 'desc' }
             : { id: 'asc' },

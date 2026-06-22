@@ -13,10 +13,12 @@ import { connectRedis } from './redis.js';
 const app = express();
 const PORT = Number(process.env.PORT) || 4001;
 
-// Middleware
+//blockiert standardmäßig Requests anderer Origin
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
+//parst eingehende Json-Bodies & cookies
 app.use(express.json());
 app.use(cookieParser());
+//Middelware
 app.use(sessionMiddleware);
 
 // API Routes
@@ -25,6 +27,8 @@ app.use('/api/cart', cartRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/categories', categoriesRouter);
 
+
+//ENDPOINTS
 // Health check
 app.get('/api/health', (req: Request, res: Response) => {
     res.json({
@@ -62,3 +66,4 @@ app.listen(PORT, async () => {
     await connectRedis();
     startCartCleanupJob();
 });
+
