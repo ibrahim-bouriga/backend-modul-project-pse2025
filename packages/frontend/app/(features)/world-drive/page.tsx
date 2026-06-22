@@ -1,4 +1,4 @@
-import MapFrameClient from "./_components/MapFrameClient";
+import MapFrame from "./_components/MapFrame";
 import QRSetup from "./_components/QRSetup";
 
 export default function WorldDrivePage() {
@@ -14,7 +14,7 @@ export default function WorldDrivePage() {
       </div>
       <div className="space-y-8">
         <div className="bg-zinc-900 rounded-2xl p-8 border border-zinc-800">
-          <MapFrameClient />
+          <MapFrame />
         </div>
         <QRSetup />
       </div>
