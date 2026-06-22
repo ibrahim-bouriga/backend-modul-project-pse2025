@@ -3,13 +3,28 @@ import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import leaflet from "leaflet";
 
-const carIcon = leaflet.icon({
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+const carIcon = leaflet.divIcon({
+  className: "",
+  html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36">
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#00000066"/>
+    </filter>
+    <g filter="url(#shadow)">
+      <rect x="3" y="9" width="18" height="8" rx="2" fill="#f97316"/>
+      <rect x="5" y="6" width="14" height="6" rx="2" fill="#f97316"/>
+      <rect x="6" y="7" width="5" height="4" rx="1" fill="#bfdbfe" opacity="0.9"/>
+      <rect x="13" y="7" width="5" height="4" rx="1" fill="#bfdbfe" opacity="0.9"/>
+      <circle cx="7.5" cy="17.5" r="2" fill="#1c1917"/>
+      <circle cx="7.5" cy="17.5" r="0.9" fill="#78716c"/>
+      <circle cx="16.5" cy="17.5" r="2" fill="#1c1917"/>
+      <circle cx="16.5" cy="17.5" r="0.9" fill="#78716c"/>
+      <rect x="2" y="11" width="2" height="3" rx="0.5" fill="#fbbf24"/>
+      <rect x="20" y="11" width="2" height="3" rx="0.5" fill="#ef4444"/>
+    </g>
+  </svg>`,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18],
+  popupAnchor: [0, -20],
 });
 
 export interface CarPosition {
