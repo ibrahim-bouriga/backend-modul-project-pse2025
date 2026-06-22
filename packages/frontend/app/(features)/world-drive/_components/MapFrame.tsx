@@ -1,94 +1,90 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { CarPosition } from "./Map";
+import type { VehicleTelemetry } from "./Map";
 
 const Map = dynamic(() => import("./Map"), { ssr: false });
 
-const POLL_INTERVAL_LIVE_MS = 100;   // fast when car is sending data
-const POLL_INTERVAL_IDLE_MS = 3000;  // slow when no signal
-const ANIM_DURATION_MS = 1000;
-const MAX_TRAIL_LENGTH = 100;
+const POLL_INTERVAL_LIVE_MS = 100;
+const POLL_INTERVAL_IDLE_MS = 3000;
+const MAX_TRAIL_LENGTH = 200;
+const SPEED_ALPHA = 0.3; // EMA smoothing — lower = smoother, higher = more responsive
 
 type Status = "connecting" | "live" | "error";
 
+function haversineMeters(a: VehicleTelemetry, b: VehicleTelemetry): number {
+  const R = 6_371_000;
+  const dLat = (b.lat - a.lat) * (Math.PI / 180);
+  const dLng = (b.lng - a.lng) * (Math.PI / 180);
+  const sin2 =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(a.lat * (Math.PI / 180)) *
+      Math.cos(b.lat * (Math.PI / 180)) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(sin2), Math.sqrt(1 - sin2));
+}
+
 export default function MapFrame() {
-  const [serverPosition, setServerPosition] = useState<CarPosition | null>(null);
-  const [displayPosition, setDisplayPosition] = useState<CarPosition | null>(null);
-  const [trail, setTrail] = useState<CarPosition[]>([]);
+  const [serverPosition, setServerPosition] = useState<VehicleTelemetry | null>(null);
+  const [trail, setTrail] = useState<VehicleTelemetry[]>([]);
   const [status, setStatus] = useState<Status>("connecting");
+  const [speedKmh, setSpeedKmh] = useState<number | null>(null);
 
-  const fromRef = useRef<CarPosition | null>(null);
-  const toRef = useRef<CarPosition | null>(null);
-  const animatedRef = useRef<CarPosition | null>(null);
-  const animStartRef = useRef<number>(0);
+  const prevPositionRef   = useRef<VehicleTelemetry | null>(null);
+  const smoothedSpeedRef  = useRef<number | null>(null);
+  const statusRef         = useRef<Status>("connecting");
 
-  useEffect(() => {
-    let frame: number;
-
-    function loop(now: number) {
-      const from = fromRef.current;
-      const to = toRef.current;
-
-      if (from && to && animStartRef.current > 0) {
-        const t = Math.min((now - animStartRef.current) / ANIM_DURATION_MS, 1);
-        const interpolated: CarPosition = {
-          lat: from.lat + (to.lat - from.lat) * t,
-          lng: from.lng + (to.lng - from.lng) * t,
-          timestamp: to.timestamp,
-        };
-        animatedRef.current = interpolated;
-        setDisplayPosition(interpolated);
-      }
-
-      frame = requestAnimationFrame(loop);
-    }
-
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
-  }, []); // empty deps — runs once for the lifetime of the component
-
+  // Speed calculation + EMA smoothing on each new server position
   useEffect(() => {
     if (!serverPosition) return;
 
-    if (!toRef.current) {
-      fromRef.current = serverPosition;
-      toRef.current = serverPosition;
-      animatedRef.current = serverPosition;
-      animStartRef.current = performance.now();
-      setDisplayPosition(serverPosition);
-      setTrail([serverPosition]);
-      return;
+    const prev = prevPositionRef.current;
+    if (prev && (serverPosition.lat !== prev.lat || serverPosition.lng !== prev.lng)) {
+      let rawKmh: number | null = null;
+
+      if (serverPosition.speed != null) {
+        // GPS Doppler or simulation-calculated speed — authoritative
+        rawKmh = serverPosition.speed * 3.6;
+      } else {
+        // Fallback: derive from position delta using payload timestamps
+        const dtMs =
+          new Date(serverPosition.timestamp).getTime() - new Date(prev.timestamp).getTime();
+        if (dtMs > 0) {
+          rawKmh = (haversineMeters(prev, serverPosition) / (dtMs / 1000)) * 3.6;
+        }
+      }
+
+      if (rawKmh != null && rawKmh >= 0) {
+        const prev = smoothedSpeedRef.current;
+        const smoothed = prev == null ? rawKmh : SPEED_ALPHA * rawKmh + (1 - SPEED_ALPHA) * prev;
+        smoothedSpeedRef.current = smoothed;
+        setSpeedKmh(Math.round(smoothed));
+      }
+
+      // Add PREV (not current) so the confirmed trail always ends where the animation started.
+      // The live segment in Map.tsx extends from the trail tip to the marker in real time.
+      setTrail((t) => [...t.slice(-(MAX_TRAIL_LENGTH - 1)), prev]);
     }
 
-    if (
-      serverPosition.lat === toRef.current.lat &&
-      serverPosition.lng === toRef.current.lng
-    ) return;
-
-    fromRef.current = animatedRef.current ?? serverPosition;
-    toRef.current = serverPosition;
-    animStartRef.current = performance.now();
-    setTrail((prev) => [...prev.slice(-(MAX_TRAIL_LENGTH - 1)), serverPosition]);
+    prevPositionRef.current = serverPosition;
   }, [serverPosition]);
 
-  const statusRef = useRef<Status>("connecting");
-
-  // Poll the service for the latest GPS position
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
 
-    async function fetchPosition() {
+    async function fetchTelemetry() {
       try {
-        const res = await fetch("/api/world-drive/position");
+        const res = await fetch("/api/world-drive/telemetry");
         if (res.status === 404) {
           statusRef.current = "connecting";
           setStatus("connecting");
+          setSpeedKmh(null);
+          smoothedSpeedRef.current = null;
         } else if (!res.ok) {
           statusRef.current = "error";
           setStatus("error");
         } else {
-          const data = (await res.json()) as CarPosition;
+          const data = (await res.json()) as VehicleTelemetry;
           setServerPosition(data);
           statusRef.current = "live";
           setStatus("live");
@@ -98,25 +94,25 @@ export default function MapFrame() {
         setStatus("error");
       }
       const delay = statusRef.current === "live" ? POLL_INTERVAL_LIVE_MS : POLL_INTERVAL_IDLE_MS;
-      timer = setTimeout(fetchPosition, delay);
+      timer = setTimeout(fetchTelemetry, delay);
     }
 
-    fetchPosition();
+    fetchTelemetry();
     return () => clearTimeout(timer);
   }, []);
 
   const statusDot: Record<Status, string> = {
-    live: "bg-green-400 animate-pulse",
+    live:       "bg-green-400 animate-pulse",
     connecting: "bg-yellow-400 animate-pulse",
-    error: "bg-red-500",
+    error:      "bg-red-500",
   };
 
   const statusText: Record<Status, string> = {
-    live: displayPosition
-      ? `${displayPosition.lat.toFixed(5)}, ${displayPosition.lng.toFixed(5)} — updated ${new Date(displayPosition.timestamp).toLocaleTimeString()}`
+    live: serverPosition
+      ? `${serverPosition.lat.toFixed(5)}, ${serverPosition.lng.toFixed(5)}`
       : "Live",
     connecting: "Waiting for vehicle signal…",
-    error: "Cannot reach World Drive service",
+    error:      "Cannot reach World Drive service",
   };
 
   return (
@@ -133,9 +129,19 @@ export default function MapFrame() {
             )}
           </p>
         </div>
-        <span className={`w-3 h-3 rounded-full ${statusDot[status]}`} title={status} />
+        <div className="flex items-center gap-3">
+          {status === "live" && speedKmh !== null && (
+            <div className="text-right">
+              <p className="text-2xl font-black text-white tabular-nums leading-none">
+                {speedKmh}
+              </p>
+              <p className="text-xs text-zinc-500 uppercase tracking-widest">km/h</p>
+            </div>
+          )}
+          <span className={`w-3 h-3 rounded-full ${statusDot[status]}`} title={status} />
+        </div>
       </div>
-      <Map position={displayPosition} trail={trail} />
+      <Map position={serverPosition} follow={serverPosition} trail={trail} />
     </div>
   );
 }

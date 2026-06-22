@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import positionRouter from './routes/position';
+import telemetryRouter from './routes/telemetry';
 import { connectMqtt } from './mqtt/subscriber';
 
 const app = express();
@@ -18,7 +18,7 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.use('/api/position', positionRouter);
+app.use('/api/telemetry', telemetryRouter);
 
 connectMqtt(); //subscriber.ts
 

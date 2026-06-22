@@ -27,70 +27,147 @@ const carIcon = leaflet.divIcon({
   popupAnchor: [0, -20],
 });
 
-export interface CarPosition {
+export interface VehicleTelemetry {
   lat: number;
   lng: number;
+  speed: number | null; // m/s — from GPS Doppler chip or calculated
   timestamp: string;
 }
 
 interface LeafletMapProps {
-  position: CarPosition | null;
-  trail: CarPosition[];
+  position: VehicleTelemetry | null;
+  follow: VehicleTelemetry | null;
+  trail: VehicleTelemetry[];
 }
 
-// Imperative car marker + map follow — bypasses React reconciliation for smooth 60fps updates
-function CarController({ position }: { position: CarPosition | null }) {
+// Owns interpolation + both polylines so the live segment always ends at the marker
+function CarController({
+  position,
+  follow,
+  trail,
+}: {
+  position: VehicleTelemetry | null;
+  follow: VehicleTelemetry | null;
+  trail: VehicleTelemetry[];
+}) {
   const map = useMap();
-  const markerRef = useRef<L.Marker | null>(null);
+  const markerRef          = useRef<leaflet.Marker | null>(null);
+  const confirmedLineRef   = useRef<leaflet.Polyline | null>(null);
+  const liveSegmentRef     = useRef<leaflet.Polyline | null>(null);
+
+  // All animation state in refs — no React state, stays frame-synchronous
+  const fromRef         = useRef<{ lat: number; lng: number } | null>(null);
+  const toRef           = useRef<{ lat: number; lng: number } | null>(null);
+  const animatedRef     = useRef<{ lat: number; lng: number } | null>(null);
+  const animStartRef    = useRef<number>(0);
+  const animDurationRef = useRef<number>(1000); // adapts to actual update interval
+  const prevPositionRef = useRef<VehicleTelemetry | null>(null);
+
+  // Ref so the rAF loop can always read the latest trail without a closure dependency
+  const trailRef = useRef<VehicleTelemetry[]>([]);
 
   useEffect(() => {
-    markerRef.current = leaflet.marker([48.7778, 9.18], { icon: carIcon })
-      .bindPopup("<strong>PSECars Super Car</strong>")
-      .addTo(map);
-    return () => {
-      markerRef.current?.remove();
-      markerRef.current = null;
-    };
-  }, [map]);
-
-  useEffect(() => {
-    if (!position || !markerRef.current) return;
-    const latlng: L.LatLngTuple = [position.lat, position.lng];
-    markerRef.current.setLatLng(latlng);
-    // animate:false so map tracks the interpolated position exactly each frame
-    map.setView(latlng, map.getZoom(), { animate: false });
-  }, [map, position]);
-
-  return null;
-}
-
-// Imperative polyline — bypasses react-leaflet v5 / Tailwind CSS compatibility issues
-function TrailPolyline({ trail }: { trail: CarPosition[] }) {
-  const map = useMap();
-  const polylineRef = useRef<L.Polyline | null>(null);
-
-  useEffect(() => {
-    polylineRef.current = leaflet.polyline([], {
-      color: "#f97316",
-      weight: 5,
-      opacity: 0.9,
-      renderer: leaflet.canvas(),
-    }).addTo(map);
-    return () => {
-      polylineRef.current?.remove();
-      polylineRef.current = null;
-    };
-  }, [map]);
-
-  useEffect(() => {
-    if (!polylineRef.current || trail.length < 2) return;
-    polylineRef.current.setLatLngs(trail.map((p) => [p.lat, p.lng]));
+    trailRef.current = trail;
   }, [trail]);
 
+  // Mount: create all Leaflet objects + start rAF loop
+  useEffect(() => {
+    markerRef.current = leaflet
+      .marker([48.7778, 9.18], { icon: carIcon })
+      .bindPopup("<strong>PSECars Super Car</strong>")
+      .addTo(map);
+
+    const lineStyle = { color: "#f97316", weight: 5, opacity: 0.9, renderer: leaflet.canvas() };
+    confirmedLineRef.current = leaflet.polyline([], lineStyle).addTo(map);
+    liveSegmentRef.current   = leaflet.polyline([], lineStyle).addTo(map);
+
+    let frame: number;
+
+    function loop(now: number) {
+      const from = fromRef.current;
+      const to   = toRef.current;
+
+      if (from && to && markerRef.current) {
+        const t   = Math.min((now - animStartRef.current) / animDurationRef.current, 1);
+        const lat = from.lat + (to.lat - from.lat) * t;
+        const lng = from.lng + (to.lng - from.lng) * t;
+        animatedRef.current = { lat, lng };
+
+        // Direct DOM updates — no React scheduler involved
+        markerRef.current.setLatLng([lat, lng]);
+
+        // Live segment: last confirmed trail point → current animated position
+        const t2 = trailRef.current;
+        const last = t2[t2.length - 1];
+        if (last) {
+          liveSegmentRef.current?.setLatLngs([[last.lat, last.lng], [lat, lng]]);
+        }
+      }
+
+      frame = requestAnimationFrame(loop);
+    }
+
+    frame = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(frame);
+      markerRef.current?.remove();
+      confirmedLineRef.current?.remove();
+      liveSegmentRef.current?.remove();
+    };
+  }, [map]);
+
+  // Confirmed trail polyline — only redrawn when trail prop changes
+  useEffect(() => {
+    if (!confirmedLineRef.current) return;
+    if (trail.length < 2) {
+      confirmedLineRef.current.setLatLngs([]);
+    } else {
+      confirmedLineRef.current.setLatLngs(trail.map((p) => [p.lat, p.lng]));
+    }
+  }, [trail]);
+
+  // New server position → adapt animation duration + update target
+  useEffect(() => {
+    if (!position) return;
+    const now  = performance.now();
+    const prev = prevPositionRef.current;
+
+    if (prev && (position.lat !== prev.lat || position.lng !== prev.lng)) {
+      // Use payload timestamps for accurate interval measurement (removes polling-timing noise)
+      const payloadDt =
+        new Date(position.timestamp).getTime() - new Date(prev.timestamp).getTime();
+      if (payloadDt > 100 && payloadDt < 30_000) {
+        // Animate 90% of the real interval so car always arrives just before the next update
+        animDurationRef.current = payloadDt * 0.9;
+      }
+    }
+
+    prevPositionRef.current = position;
+
+    if (!toRef.current) {
+      const pt = { lat: position.lat, lng: position.lng };
+      fromRef.current = toRef.current = animatedRef.current = pt;
+      animStartRef.current = now;
+      return;
+    }
+
+    if (position.lat === toRef.current.lat && position.lng === toRef.current.lng) return;
+
+    fromRef.current  = animatedRef.current ?? { lat: position.lat, lng: position.lng };
+    toRef.current    = { lat: position.lat, lng: position.lng };
+    animStartRef.current = now;
+  }, [position]);
+
+  // Camera pan — animate:false avoids Leaflet CSS transforms conflicting with our rAF updates
+  useEffect(() => {
+    if (!follow) return;
+    map.setView([follow.lat, follow.lng], map.getZoom(), { animate: true, duration: 0.9 });
+  }, [map, follow]);
+
   return null;
 }
 
-export default function LeafletMap({ position, trail }: LeafletMapProps) {
+export default function LeafletMap({ position, follow, trail }: LeafletMapProps) {
   return (
     <MapContainer
       center={[48.7778, 9.18]}
@@ -101,8 +178,7 @@ export default function LeafletMap({ position, trail }: LeafletMapProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <TrailPolyline trail={trail} />
-      <CarController position={position} />
+      <CarController position={position} follow={follow} trail={trail} />
     </MapContainer>
   );
 }

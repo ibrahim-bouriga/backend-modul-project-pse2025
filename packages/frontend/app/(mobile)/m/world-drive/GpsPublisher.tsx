@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import mqtt, { MqttClient } from "mqtt";
 
-const TOPIC      = "psecars/worlddrive/position";
+const TOPIC      = "psecars/worlddrive/telemetry";
 const BROKER_WSS = "wss://broker.hivemq.com:8884/mqtt";
 
 type MqttStatus = "connecting" | "connected" | "error" | "idle";
@@ -49,12 +49,12 @@ export default function GpsPublisher() {
 
     watchRef.current = navigator.geolocation.watchPosition(
       (pos) => {
-        const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+        const { latitude: lat, longitude: lng, accuracy, speed } = pos.coords;
         setCoords({ lat, lng, accuracy: Math.round(accuracy) });
         setGpsStatus("active");
 
         if (client.connected) {
-          client.publish(TOPIC, JSON.stringify({ lat, lng, timestamp: new Date().toISOString() }));
+          client.publish(TOPIC, JSON.stringify({ lat, lng, speed, timestamp: new Date().toISOString() }));
           setPublishCount((c) => c + 1);
           setLastPublish(new Date().toLocaleTimeString());
         }

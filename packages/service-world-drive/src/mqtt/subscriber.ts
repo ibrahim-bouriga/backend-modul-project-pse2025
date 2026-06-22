@@ -1,7 +1,7 @@
 import mqtt from 'mqtt';
-import { updatePosition } from '../services/position.service';
+import { updateTelemetry } from '../services/telemetry.service';
 
-const TOPIC = 'psecars/worlddrive/position';
+const TOPIC = 'psecars/worlddrive/telemetry';
 
 const brokerUrl = process.env.MQTT_BROKER_URL ?? 'mqtt://broker.hivemq.com:1883';
 
@@ -30,11 +30,23 @@ export function connectMqtt(): void {
         typeof (data as Record<string, unknown>).lat === 'number' &&
         typeof (data as Record<string, unknown>).lng === 'number'
       ) {
-        const { lat, lng, timestamp } = data as { lat: number; lng: number; timestamp?: string };
-        updatePosition({ lat, lng, timestamp: timestamp ?? new Date().toISOString() });
-        console.log(`[MQTT] Position updated: ${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+        const { lat, lng, speed, timestamp } = data as {
+          lat: number;
+          lng: number;
+          speed?: number | null;
+          timestamp?: string;
+        };
+        updateTelemetry({
+          lat,
+          lng,
+          speed: typeof speed === 'number' ? speed : null,
+          timestamp: timestamp ?? new Date().toISOString(),
+        });
+        console.log(
+          `[MQTT] Telemetry: ${lat.toFixed(5)}, ${lng.toFixed(5)} — ${speed != null ? `${(speed * 3.6).toFixed(1)} km/h` : 'speed N/A'}`,
+        );
       } else {
-        console.warn('[MQTT] Received invalid position payload');
+        console.warn('[MQTT] Received invalid telemetry payload');
       }
     } catch {
       console.error('[MQTT] Failed to parse message');
