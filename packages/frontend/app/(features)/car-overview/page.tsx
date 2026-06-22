@@ -1,5 +1,7 @@
 import CarGrid from "./_components/CarGrid";
 
+export const dynamic = "force-dynamic";
+
 export default function CarOverviewPage() {
   return (
     <div className="max-w-6xl mx-auto px-8 py-16 space-y-10">
