@@ -35,17 +35,19 @@ export interface VehicleTelemetry {
 }
 
 interface LeafletMapProps {
+  initialCenter: [number, number];
   position: VehicleTelemetry | null;
   follow: VehicleTelemetry | null;
   trail: VehicleTelemetry[];
 }
 
-// Owns interpolation + both polylines so the live segment always ends at the marker
 function CarController({
+  initialCenter,
   position,
   follow,
   trail,
 }: {
+  initialCenter: [number, number];
   position: VehicleTelemetry | null;
   follow: VehicleTelemetry | null;
   trail: VehicleTelemetry[];
@@ -73,7 +75,7 @@ function CarController({
   // Mount: create all Leaflet objects + start rAF loop
   useEffect(() => {
     markerRef.current = leaflet
-      .marker([48.7778, 9.18], { icon: carIcon })
+      .marker(initialCenter, { icon: carIcon })
       .bindPopup("<strong>PSECars Super Car</strong>")
       .addTo(map);
 
@@ -167,10 +169,10 @@ function CarController({
   return null;
 }
 
-export default function LeafletMap({ position, follow, trail }: LeafletMapProps) {
+export default function LeafletMap({ initialCenter, position, follow, trail }: LeafletMapProps) {
   return (
     <MapContainer
-      center={[48.7778, 9.18]}
+      center={initialCenter}
       zoom={14}
       style={{ height: "70vh", minHeight: "500px", width: "100%", borderRadius: "12px" }}
     >
@@ -178,7 +180,7 @@ export default function LeafletMap({ position, follow, trail }: LeafletMapProps)
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      <CarController position={position} follow={follow} trail={trail} />
+      <CarController initialCenter={initialCenter} position={position} follow={follow} trail={trail} />
     </MapContainer>
   );
 }

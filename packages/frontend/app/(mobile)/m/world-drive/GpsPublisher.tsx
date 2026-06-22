@@ -2,8 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import mqtt, { MqttClient } from "mqtt";
 
-const TOPIC      = "psecars/worlddrive/telemetry";
-const BROKER_WSS = "wss://broker.hivemq.com:8884/mqtt";
+const TOPIC          = "psecars/worlddrive/telemetry";
+const BROKER_WSS     = "wss://broker.hivemq.com:8884/mqtt";
+const MAX_ACCURACY_M = 30; // Daten werden nicht gepublished bevor die Genauigkeit nicht unter +- 30 m liegt
 
 type MqttStatus = "connecting" | "connected" | "error" | "idle";
 type GpsStatus  = "requesting" | "active" | "error";
@@ -44,7 +45,7 @@ export default function GpsPublisher() {
         setGpsStatus("active");
 
         const client = clientRef.current;
-        if (client?.connected) {
+        if (client?.connected && accuracy <= MAX_ACCURACY_M) {
           client.publish(TOPIC, JSON.stringify({ lat, lng, speed, timestamp: new Date().toISOString() }));
           setPublishCount((c) => c + 1);
           setLastPublish(new Date().toLocaleTimeString());
@@ -57,12 +58,23 @@ export default function GpsPublisher() {
 
   function connectMqtt() {
     setMqttStatus("connecting");
-    const client = mqtt.connect(BROKER_WSS, { reconnectPeriod: 5000, connectTimeout: 10_000 });
+    const client = mqtt.connect(BROKER_WSS, {
+      reconnectPeriod: 5000,
+      connectTimeout:  30_000,
+      keepalive:       60,
+    });
     clientRef.current = client;
 
-    client.on("connect", () => { setMqttStatus("connected"); setError(null); });
-    client.on("error",   (err) => { setMqttStatus("error"); setError(err.message); });
-    client.on("close",   () => setMqttStatus("idle"));
+    client.on("connect",     () => { setMqttStatus("connected"); setError(null); });
+    client.on("reconnect",   () => setMqttStatus("connecting"));
+    client.on("error",       (err) => {
+      // connack timeout and similar transient errors resolve via auto-reconnect — don't show as hard error
+      const transient = err.message.toLowerCase().includes("timeout") ||
+                        err.message.toLowerCase().includes("connack");
+      if (!transient) setError(err.message);
+      setMqttStatus("connecting");
+    });
+    client.on("close",       () => setMqttStatus("connecting"));
   }
 
   const dot = (status: string) => {
@@ -102,7 +114,11 @@ export default function GpsPublisher() {
             <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">GPS</p>
             <p className="text-sm text-white">
               {gpsStatus === "requesting" && "Waiting for permission…"}
-              {gpsStatus === "active"     && coords && `±${coords.accuracy} m accuracy`}
+              {gpsStatus === "active" && coords && (
+                coords.accuracy <= MAX_ACCURACY_M
+                  ? `±${coords.accuracy} m — sending`
+                  : `±${coords.accuracy} m — waiting for signal…`
+              )}
               {gpsStatus === "error"      && "GPS unavailable"}
             </p>
           </div>

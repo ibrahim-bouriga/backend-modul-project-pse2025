@@ -3,7 +3,7 @@ import mqtt from 'mqtt';
 const TOPIC              = 'psecars/worlddrive/telemetry';
 const INTERVAL_MS        = 200;
 const SPEED_REFERENCE_MS = 1000; // OSRM waypoints designed for ~1s steps — keeps speed realistic
-const MAX_SPEED_MS       = 100 / 3.6; // cap at 100 km/h
+const MAX_SPEED_MS       = 60 / 3.6; // cap at 60 km/h
 
 // Route: Schlossplatz → Hauptbahnhof → Rotebühlplatz → Schlossplatz (~3.5 km)
 const WAYPOINTS: Array<[number, number]> = [

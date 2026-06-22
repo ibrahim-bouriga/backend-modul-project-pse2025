@@ -5,8 +5,9 @@ import type { VehicleTelemetry } from "./Map";
 
 const Map = dynamic(() => import("./Map"), { ssr: false });
 
-const POLL_INTERVAL_LIVE_MS = 100;
-const POLL_INTERVAL_IDLE_MS = 3000;
+const POLL_INTERVAL_LIVE_MS  = 100;
+const POLL_INTERVAL_IDLE_MIN = 1_000;
+const POLL_INTERVAL_IDLE_MAX = 8_000;
 const MAX_TRAIL_LENGTH = 200;
 const SPEED_ALPHA = 0.3; // EMA smoothing — lower = smoother, higher = more responsive
 
@@ -29,6 +30,8 @@ export default function MapFrame() {
   const [trail, setTrail] = useState<VehicleTelemetry[]>([]);
   const [status, setStatus] = useState<Status>("connecting");
   const [speedKmh, setSpeedKmh] = useState<number | null>(null);
+
+  const [initialCenter, setInitialCenter] = useState<[number, number] | null>(null);
 
   const prevPositionRef   = useRef<VehicleTelemetry | null>(null);
   const smoothedSpeedRef  = useRef<number | null>(null);
@@ -66,11 +69,13 @@ export default function MapFrame() {
       setTrail((t) => [...t.slice(-(MAX_TRAIL_LENGTH - 1)), prev]);
     }
 
+    if (!initialCenter) setInitialCenter([serverPosition.lat, serverPosition.lng]);
     prevPositionRef.current = serverPosition;
   }, [serverPosition]);
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
+    let idleDelay = POLL_INTERVAL_IDLE_MIN;
 
     async function fetchTelemetry() {
       try {
@@ -80,20 +85,24 @@ export default function MapFrame() {
           setStatus("connecting");
           setSpeedKmh(null);
           smoothedSpeedRef.current = null;
+          idleDelay = Math.min(idleDelay * 2, POLL_INTERVAL_IDLE_MAX);
         } else if (!res.ok) {
           statusRef.current = "error";
           setStatus("error");
+          idleDelay = POLL_INTERVAL_IDLE_MAX;
         } else {
           const data = (await res.json()) as VehicleTelemetry;
           setServerPosition(data);
           statusRef.current = "live";
           setStatus("live");
+          idleDelay = POLL_INTERVAL_IDLE_MIN;
         }
       } catch {
         statusRef.current = "error";
         setStatus("error");
+        idleDelay = POLL_INTERVAL_IDLE_MAX;
       }
-      const delay = statusRef.current === "live" ? POLL_INTERVAL_LIVE_MS : POLL_INTERVAL_IDLE_MS;
+      const delay = statusRef.current === "live" ? POLL_INTERVAL_LIVE_MS : idleDelay;
       timer = setTimeout(fetchTelemetry, delay);
     }
 
@@ -141,7 +150,13 @@ export default function MapFrame() {
           <span className={`w-3 h-3 rounded-full ${statusDot[status]}`} title={status} />
         </div>
       </div>
-      <Map position={serverPosition} follow={serverPosition} trail={trail} />
+      {initialCenter ? (
+        <Map initialCenter={initialCenter} position={serverPosition} follow={serverPosition} trail={trail} />
+      ) : (
+        <div className="flex items-center justify-center bg-zinc-800 rounded-xl border border-zinc-700" style={{ height: "70vh", minHeight: "500px" }}>
+          <p className="text-zinc-500 text-sm">Waiting for vehicle signal…</p>
+        </div>
+      )}
     </div>
   );
 }
