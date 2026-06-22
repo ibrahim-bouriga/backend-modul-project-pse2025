@@ -1,21 +1,25 @@
 services:
-  backend:
+  car_models:
     profiles: ["prod"]
     build:
-      context: ./packages/backend
+      context: ./packages/car_models
       dockerfile: Dockerfile
     ports:
-      - "${BACKEND_PORT:-4000}:4000"
+      - "${CAR_MODELS_PORT:-4001}:4001"
     environment:
-      PORT: "4000"
+      PORT: "4001"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pse2025}"
-      MQTT_BROKER_HOST: mosquitto
-      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:${MINIO_PORT:-9000}"
     depends_on:
       postgres:
         condition: service_healthy
-      mosquitto:
-        condition: service_started
+      minio:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
@@ -32,6 +36,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: "3000"
+      CAR_MODELS_URL: "http://car_models:4001"
       NGROK_API_URL: "http://ngrok:4040"
       SERVICE_MYPSECARS_URL: "http://service-mypsecars:4004"
       MQTT_BROKER_HOST: mosquitto
@@ -39,7 +44,8 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
-      - backend
+      - car_models
+      - service-mypsecars
     restart: unless-stopped
 
   ngrok:
