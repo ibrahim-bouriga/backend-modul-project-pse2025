@@ -20,6 +20,15 @@ export interface ExtraOption {
   category: 'technology' | 'comfort' | 'performance' | 'safety';
 }
 
+// Tint option for car windows
+export interface TintOption extends ColorOption {
+  id: string;
+  name: string;
+  hex: string;
+  opacity: number; // 0 to 1
+  price: number;
+}
+
 // Complete car configuration
 export interface CarConfiguration {
   carId: string;
@@ -28,8 +37,9 @@ export interface CarConfiguration {
   bodyColor: ColorOption;
   wheelColor: ColorOption;
   brakeColor: ColorOption;
+  tint: TintOption;
   extras: ExtraOption[];
-  totalPrice: number;
+  totalPrice: number;  
 }
 
 // Configuration state for the configurator
@@ -37,6 +47,7 @@ export interface ConfiguratorState {
   selectedBodyColorId: string;
   selectedWheelColorId: string;
   selectedBrakeColorId: string;
+  selectedTintId: string;
   selectedExtraIds: string[];
 }
 
@@ -45,6 +56,7 @@ export interface CarViewer3DProps {
   bodyColor: string;
   wheelColor: string;
   brakeColor: string;
+  tintOpacity: number;
   isLoading?: boolean;
 }
 
@@ -54,6 +66,7 @@ export interface ConfigPanelProps {
   onBodyColorChange: (color: ColorOption) => void;
   onWheelColorChange: (color: ColorOption) => void;
   onBrakeColorChange: (color: ColorOption) => void;
+  onTintChange: (tint: TintOption) => void;
   onExtrasChange: (extras: ExtraOption[]) => void;
   onSave: () => void;
   isSaving?: boolean;
@@ -64,23 +77,6 @@ export interface ConfigurationOptions {
   bodyColors: ColorOption[];
   wheelColors: ColorOption[];
   brakeColors: ColorOption[];
+  tints: TintOption[];
   extras: ExtraOption[];
-}
-
-// Saved configuration response from API
-export interface SavedConfiguration {
-  id: string;
-  userId?: string;
-  carId: string;
-  configuration: CarConfiguration;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// API response for saving configuration
-export interface SaveConfigurationResponse {
-  success: boolean;
-  configurationId: string;
-  totalPrice: number;
-  message?: string;
 }

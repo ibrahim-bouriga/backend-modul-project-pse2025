@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CarConfiguration, ColorOption, ExtraOption } from './types';
+import { CarConfiguration, ColorOption, TintOption, ExtraOption } from './types';
 import ColorPicker from './ColorPicker';
 import PriceCalculator from './PriceCalculator';
 
@@ -10,10 +10,12 @@ interface ConfigPanelProps {
   availableBodyColors: ColorOption[];
   availableWheelColors: ColorOption[];
   availableBrakeColors: ColorOption[];
+  availableTints: TintOption[];
   availableExtras: ExtraOption[];
   onBodyColorChange: (color: ColorOption) => void;
   onWheelColorChange: (color: ColorOption) => void;
   onBrakeColorChange: (color: ColorOption) => void;
+  onTintChange: (tint: TintOption) => void;
   onExtrasChange: (extras: ExtraOption[]) => void;
 }
 
@@ -26,10 +28,12 @@ export default function ConfigPanel({
   availableBodyColors,
   availableWheelColors,
   availableBrakeColors,
+  availableTints,
   availableExtras,
   onBodyColorChange,
   onWheelColorChange,
   onBrakeColorChange,
+  onTintChange,
   onExtrasChange,
 }: ConfigPanelProps) {
   const [activeTab, setActiveTab] = useState<'customize' | 'extras'>('customize');
@@ -90,11 +94,11 @@ export default function ConfigPanel({
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 flex flex-col gap-2 overflow-y-auto p-6 space-y-6">
         {activeTab === 'customize' ? (
           <>
             {/* Body Color Picker */}
-            <h3 className="text-lg font-semibold text-gray-100">Exterior Color</h3>
+            <p className="text-lg mt-2 mb-0! font-semibold text-gray-100">Exterior Color</p>
             <ColorPicker
               colors={availableBodyColors}
               selectedColorId={configuration.bodyColor.id}
@@ -102,7 +106,7 @@ export default function ConfigPanel({
             />
 
             {/* Wheel Color Picker */}
-            <h3 className="text-lg font-semibold text-gray-100">Wheel Color</h3>
+            <h3 className="text-lg mt-2 mb-0! font-semibold text-gray-100">Wheel Color</h3>
             <ColorPicker
               colors={availableWheelColors}
               selectedColorId={configuration.wheelColor.id}
@@ -110,11 +114,19 @@ export default function ConfigPanel({
             />
 
             {/* Brake Color Picker */}
-            <h3 className="text-lg font-semibold text-gray-100">Brake Color</h3>
+            <h3 className="text-lg mt-2 mb-0! font-semibold text-gray-100">Brake Color</h3>
             <ColorPicker
               colors={availableBrakeColors}
               selectedColorId={configuration.brakeColor.id}
               onColorChange={onBrakeColorChange}
+            />
+
+            {/* Window Tint Picker */}
+            <h3 className="text-lg mt-2 mb-0! font-semibold text-gray-100">Window Tint</h3>
+            <ColorPicker
+              colors={availableTints}
+              selectedColorId={configuration.tint.id}
+              onColorChange={onTintChange}
             />
           </>
         ) : (

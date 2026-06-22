@@ -7,6 +7,7 @@ import {
   CarConfiguration,
   ColorOption,
   ExtraOption,
+  TintOption,
   ConfigurationOptions,
 } from "./_components/types";
 
@@ -29,6 +30,10 @@ const AVAILABLE_OPTIONS: ConfigurationOptions = {
     { id: "red", name: "Racing Red", hex: "#DC2626", price: 0 },
     { id: "black", name: "Carbon Black", hex: "#000000", price: 500 },
     { id: "yellow", name: "Neon Yellow", hex: "#FFFF00", price: 700 },
+  ],
+  tints: [
+    { id: "light", name: "Light Tint", hex: "#A6A6A6", opacity: 0.3, price: 0 },
+    { id: "dark", name: "Dark Tint", hex: "#000000", opacity: 0.7, price: 1000 },
   ],
   extras: [
     {
@@ -98,20 +103,17 @@ const BASE_CAR = {
 };
 
 export default function CarConfiguratorPage() {
+  const [cockpitMode, setCockpitMode] = useState(false);
+
   const [configuration, setConfiguration] = useState<CarConfiguration>({
     ...BASE_CAR,
     bodyColor: AVAILABLE_OPTIONS.bodyColors[0],
     wheelColor: AVAILABLE_OPTIONS.wheelColors[0],
     brakeColor: AVAILABLE_OPTIONS.brakeColors[0],
+    tint: AVAILABLE_OPTIONS.tints[0],
     extras: [],
     totalPrice: BASE_CAR.basePrice,
   });
-
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
 
   // Calculate total price whenever configuration changes
   useEffect(() => {
@@ -120,6 +122,7 @@ export default function CarConfiguratorPage() {
       configuration.bodyColor.price +
       configuration.wheelColor.price +
       configuration.brakeColor.price +
+      configuration.tint.price +
       configuration.extras.reduce((sum, extra) => sum + extra.price, 0);
 
     setConfiguration((prev) => ({ ...prev, totalPrice: total }));
@@ -146,16 +149,21 @@ export default function CarConfiguratorPage() {
     setConfiguration((prev) => ({ ...prev, brakeColor: color }));
   };
 
+  const handleTintChange = (tint: TintOption) => {
+    setConfiguration((prev) => ({ ...prev, tint: tint }));
+  };
+
   // Handle extras change
   const handleExtrasChange = (extras: ExtraOption[]) => {
     setConfiguration((prev) => ({ ...prev, extras }));
   };
 
   return (
+    
     <div className="h-screen flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="shrink-0 flex flex-col md:flex-row justify-between items-center">
+        <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
           <div>
             <p className="text-xs font-semibold tracking-[0.3em] uppercase  mb-2">
               3D Car Configurator
@@ -173,19 +181,31 @@ export default function CarConfiguratorPage() {
             </p>
           </div>
         </div>
+        <div>
+          <div
+            className="text-lg hover:cursor-pointer min-h-18 min-w-64 mr-8 mt-6 inline-flex items-center px-4 py-2 border border-zinc-700 rounded-lg font-medium text-white bg-zinc-800 hover:bg-zinc-700 transition-colors"
+            onClick={() => setCockpitMode((prev) => !prev)}
+          >
+            <p className="mx-auto">
+              {cockpitMode ? "Exit Cockpit" : "Drive Me!"}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 min-h-0 overflow-hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-10/12">
+      <div className="flex-1 min-h-0 overflow-hidden px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full lg:h-10/12">
           {/* 3D Viewer - Takes 2 columns on large screens */}
           <div className="lg:col-span-2 min-h-0">
-            <div className="h-full rounded-lg overflow-hidden">
+            <div className="lg:h-full rounded-lg overflow-hidden">
               <CarViewer3D
                 bodyColor={configuration.bodyColor.hex}
                 wheelColor={configuration.wheelColor.hex}
                 brakeColor={configuration.brakeColor.hex}
+                tintOpacity={configuration.tint.opacity}
                 isLoading={false}
+                cockpitMode={cockpitMode}
               />
             </div>
           </div>
@@ -198,10 +218,12 @@ export default function CarConfiguratorPage() {
                 availableBodyColors={AVAILABLE_OPTIONS.bodyColors}
                 availableWheelColors={AVAILABLE_OPTIONS.wheelColors}
                 availableBrakeColors={AVAILABLE_OPTIONS.brakeColors}
+                availableTints={AVAILABLE_OPTIONS.tints}
                 availableExtras={AVAILABLE_OPTIONS.extras}
                 onBodyColorChange={handleBodyColorChange}
                 onWheelColorChange={handleWheelColorChange}
                 onBrakeColorChange={handleBrakeColorChange}
+                onTintChange={handleTintChange}
                 onExtrasChange={handleExtrasChange}
               />
             </div>

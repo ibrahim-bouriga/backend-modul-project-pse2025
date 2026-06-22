@@ -1,14 +1,15 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, useFBX, useGLTF } from '@react-three/drei';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef, MutableRefObject } from 'react';
 import * as THREE from 'three';
 
 interface CarModelProps {
   bodyColor: string;
   wheelColor: string;
   brakeColor: string;
+  tintOpacity: number;
 }
 
 const setPartColor = (name: string, color: string, metalness: number, roughness: number, gltf: any) => {
@@ -31,10 +32,27 @@ const setPartColor = (name: string, color: string, metalness: number, roughness:
     });
   };
 
+const setWindowTint = (opacity: number, gltf: any) => {
+  gltf.scene.traverse((child) => {
+    if (child instanceof THREE.Mesh) {
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((mat) => {
+        if (mat instanceof THREE.MeshStandardMaterial) {
+          if (child.name.includes('Window') || mat.name.includes('Window')) {
+            mat.transparent = true;
+            mat.opacity = opacity;
+            mat.color.set('#000000');
+          }
+        }
+      });
+    }
+  });
+};
+
 /**
  * Lamborghini Revuelto FBX model
  */
-function CarModel({ bodyColor, wheelColor, brakeColor }: CarModelProps) {
+function CarModel({ bodyColor, wheelColor, brakeColor, tintOpacity }: CarModelProps) {
   const gltf = useGLTF('/free_lamborghini_revuelto/scene.gltf');
 
   useEffect(() => {
@@ -104,7 +122,62 @@ function CarModel({ bodyColor, wheelColor, brakeColor }: CarModelProps) {
     setPartColor('Caliper', brakeColor, 0.5, 0.1, gltf);
   }, [gltf, brakeColor]);
 
+  useEffect(() => {
+    setWindowTint(tintOpacity, gltf);
+  }, [gltf, tintOpacity]);
+
   return <primitive object={gltf.scene} scale={2} position={[0, -0.8, 0]}/>;
+}
+
+const NORMAL_CAMERA_POSITION = new THREE.Vector3(5, 3, 5);
+const NORMAL_CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
+const COCKPIT_CAMERA_POSITION = new THREE.Vector3(0.8, 0.8, 0.2);
+const COCKPIT_CAMERA_TARGET = new THREE.Vector3(0.35, 0.4, 5);
+
+function CameraController({
+  cockpitMode,
+  controlsRef,
+}: {
+  cockpitMode: boolean;
+  controlsRef: MutableRefObject<any>;
+}) {
+  const { camera } = useThree();
+  const isAnimating = useRef(false);
+
+  useEffect(() => {
+    // Start transition animation and disable controls for the duration
+    isAnimating.current = true;
+    if (controlsRef.current) {
+      controlsRef.current.enabled = false;
+    }
+  }, [cockpitMode, controlsRef]);
+
+  useFrame(() => {
+    if (!isAnimating.current) return;
+
+    const targetPos = cockpitMode ? COCKPIT_CAMERA_POSITION : NORMAL_CAMERA_POSITION;
+    const targetLook = cockpitMode ? COCKPIT_CAMERA_TARGET : NORMAL_CAMERA_TARGET;
+
+    camera.position.lerp(targetPos, 0.05);
+    if (controlsRef.current) {
+      controlsRef.current.target.lerp(targetLook, 0.05);
+      controlsRef.current.update();
+    }
+
+    // Stop animating once close enough to target
+    if (camera.position.distanceTo(targetPos) < 0.01) {
+      camera.position.copy(targetPos);
+      if (controlsRef.current) {
+        controlsRef.current.target.copy(targetLook);
+        controlsRef.current.update();
+        // Only re-enable orbit controls when outside the cockpit
+        controlsRef.current.enabled = !cockpitMode;
+      }
+      isAnimating.current = false;
+    }
+  });
+
+  return null;
 }
 
 /**
@@ -125,11 +198,11 @@ function LoadingFallback() {
 function Ground() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.8, 0]} receiveShadow>
-      <planeGeometry args={[20, 20]} />
+      <planeGeometry args={[200, 200]} />
       <meshStandardMaterial 
-        color="#1a1a1a"
-        metalness={0.1}
-        roughness={0.8}
+        color="#222222"
+        metalness={0.2}
+        roughness={0.95}
       />
     </mesh>
   );
@@ -139,17 +212,21 @@ export interface CarViewer3DProps {
   bodyColor: string;
   wheelColor: string;
   brakeColor: string;
+  tintOpacity: number;
   isLoading?: boolean;
+  cockpitMode?: boolean;
 }
 
 /**
  * Main 3D Car Viewer Component
  * Renders an interactive 3D car model with orbit controls
  */
-export default function CarViewer3D({ bodyColor, wheelColor, brakeColor, isLoading = false }: CarViewer3DProps) {
+export default function CarViewer3D({ bodyColor, wheelColor, brakeColor, tintOpacity, isLoading = false, cockpitMode = false }: CarViewer3DProps) {
+  const controlsRef = useRef<any>(null);
+
   return (
     <div className="w-full h-full bg-zinc-900 rounded-lg overflow-hidden">
-      <Canvas shadows scene={{ background: new THREE.Color('#000000') }}>
+      <Canvas shadows>
         {/* Camera */}
         <PerspectiveCamera makeDefault position={[5, 3, 5]} fov={50} />
         
@@ -170,19 +247,23 @@ export default function CarViewer3D({ bodyColor, wheelColor, brakeColor, isLoadi
           castShadow
         />
         
-        {/* Environment for reflections */}
-        <Environment preset="night" />
+        {/* Environment for reflections, background, and ground projection */}
+        <Environment preset="forest" background backgroundBlurriness={0.2} ground={{ height: 15, radius: 80 }} />
         
         {/* Ground */}
         <Ground />
         
         {/* Car Model */}
         <Suspense fallback={<LoadingFallback />}>
-          <CarModel bodyColor={bodyColor} wheelColor={wheelColor} brakeColor={brakeColor}/>
+          <CarModel bodyColor={bodyColor} wheelColor={wheelColor} brakeColor={brakeColor} tintOpacity={tintOpacity} />
         </Suspense>
         
+        {/* Camera Controller */}
+        <CameraController cockpitMode={cockpitMode} controlsRef={controlsRef} />
+
         {/* Orbit Controls */}
-        <OrbitControls 
+        <OrbitControls
+          ref={controlsRef}
           enablePan={true}
           enableZoom={true}
           enableRotate={true}
