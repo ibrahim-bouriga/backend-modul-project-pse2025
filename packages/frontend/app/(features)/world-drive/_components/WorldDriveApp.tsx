@@ -1,10 +1,10 @@
 "use client";
 import { useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import GpsPublisher from "./GpsPublisher";
-import QRSetup from "../QRSetup";
+import GpsPublisher from "./mobile/GpsPublisher";
+import QRSetup from "./QRSetup";
 
-const WorldMap = dynamic(() => import("../WorldMap"), { ssr: false });
+const WorldMap = dynamic(() => import("./WorldMap"), { ssr: false });
 
 export default function WorldDriveApp() {
   const mode = useSearchParams().get("mode");

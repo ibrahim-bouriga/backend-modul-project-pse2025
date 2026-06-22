@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import WorldDriveApp from "./_components/mobile/WorldDriveApp";
+import WorldDriveApp from "./_components/WorldDriveApp";
 
 export default function WorldDrivePage() {
   return (
@@ -9,7 +9,7 @@ export default function WorldDrivePage() {
           World Drive
         </h1>
         <p className="text-zinc-400 text-base max-w-lg leading-relaxed">
-          Follow the manufacturers super car as it roams the globe with live GPS.
+          Follow manufacturers car as it roams the globe with live GPS.
         </p>
       </div>
       <Suspense>
