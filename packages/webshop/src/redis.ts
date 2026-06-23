@@ -5,7 +5,7 @@ const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
 export const redis = createClient({ url: redisUrl });
 
-redis.on('error', (err) => {
+redis.on('error', (err: Error) => {
     console.error('[Redis] Connection error:', err);
 });
 

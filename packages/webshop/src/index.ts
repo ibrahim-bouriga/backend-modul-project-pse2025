@@ -9,9 +9,10 @@ import ordersRouter from './routes/orders.js';
 import categoriesRouter from './routes/categories.js';
 import { startCartCleanupJob } from './jobs/cleanupExpiredCarts.js';
 import { connectRedis } from './redis.js';
+import { seed } from './seed.js';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 4001;
+const PORT = Number(process.env.PORT) || 4003;
 
 //blockiert standardmäßig Requests anderer Origin
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
@@ -64,6 +65,7 @@ app.listen(PORT, async () => {
     console.log(`Webshop Backend läuft auf http://localhost:${PORT}`);
     console.log(`API verfügbar unter http://localhost:${PORT}/api`);
     await connectRedis();
+    await seed();
     startCartCleanupJob();
 });
 
