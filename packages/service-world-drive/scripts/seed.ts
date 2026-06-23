@@ -1,9 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 
 const CARS = [
-  { id: 'car-a', name: 'Car A', color: '#f97316', topic: 'psecars/worlddrive/car-a/telemetry' },
-  { id: 'car-b', name: 'Car B', color: '#3b82f6', topic: 'psecars/worlddrive/car-b/telemetry' },
-  { id: 'gps',   name: 'GPS',   color: '#22c55e', topic: 'psecars/worlddrive/gps/telemetry'   },
+  { id: 'car-a', name: 'Car A', color: '#f97316', topic: 'psecars/worlddrive/car-a/telemetry', source: 'simulator' },
+  { id: 'car-b', name: 'Car B', color: '#3b82f6', topic: 'psecars/worlddrive/car-b/telemetry', source: 'simulator' },
 ];
 
 const STUTTGART_ROUTE: Array<[number, number]> = [

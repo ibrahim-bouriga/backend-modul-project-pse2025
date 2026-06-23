@@ -9,11 +9,12 @@ generator client {
 }
 
 model Car {
-  id    String @id
-  name  String
-  color String
-  topic String @unique
-  trips Trip[]
+  id     String @id
+  name   String
+  color  String
+  topic  String @unique
+  source String @default("simulator")
+  trips  Trip[]
 }
 
 model Trip {

@@ -4,6 +4,7 @@ export interface Car {
   id:     string;
   name:   string;
   color:  string;
+  source: string;
   isLive: boolean;
 }
 
@@ -31,6 +32,9 @@ export default function CarSelector({ cars, focusedCarId, onFocus }: Props) {
             style={{ backgroundColor: car.color }}
           />
           {car.name}
+          <span className="text-xs font-normal text-zinc-500">
+            {car.source === "simulator" ? "(Sim.)" : "(GPS)"}
+          </span>
         </button>
       ))}
     </div>
