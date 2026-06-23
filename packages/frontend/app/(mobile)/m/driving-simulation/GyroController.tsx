@@ -62,12 +62,7 @@ export default function GyroController() {
     clientRef.current = null;
   }
 
-  // Sendet ein Kalibrierungs-Signal an die Desktop-Seite. Payload enthält
-  // bewusst keine beta/gamma-Werte – die Desktop-Seite kennt die aktuell
-  // letzten empfangenen Rohwerte bereits aus dem laufenden Gyro-Stream und
-  // übernimmt genau diese als neuen Nullpunkt. Das vermeidet eine Race-
-  // Condition zwischen zwei separaten Topics mit potenziell unterschiedlichem
-  // Timing.
+  // Sendet ein Kalibrierungs-Signal an die Desktop-Seite, damit die aktuellen Gyro-Werte als neue Nullposition übernommen werden.
   function calibrate() {
     if (!clientRef.current || status !== "connected" || isPortraitRef.current)
       return;
@@ -102,16 +97,6 @@ export default function GyroController() {
       }
     }
 
-    // Gyro-Daten lesen
-    // EMPIRISCH VERIFIZIERT (nicht mehr vermutet): DeviceOrientationEvent.beta
-    // misst die Vorne/Hinten-Neigung relativ zum GERÄT, nicht zum Bildschirm.
-    // Im Landscape liegt das Gerät auf der Seite, wodurch "nach vorne neigen"
-    // (visuell) physikalisch eine Drehung ist, die der Sensor überwiegend als
-    // gamma-Änderung registriert, nicht als beta-Änderung. Gemessene Werte:
-    //   flach:           beta≈2,  gamma≈0
-    //   nach vorne:       beta≈1,  gamma≈17   → gamma reagiert, nicht beta
-    //   nach rechts:      beta≈24, gamma≈63   → beta reagiert auf Lenkung
-    // Daher: throttle aus gamma, steering aus beta (vertauscht ggü. Portrait).
     const onOrientation = (e: DeviceOrientationEvent) => {
       const rawBeta = e.beta ?? 0;
       const rawGamma = e.gamma ?? 0;

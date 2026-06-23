@@ -21,28 +21,12 @@ function generateUUID(): string {
 }
 const TOPIC_PREFIX = "pse2025/carworld";
 
-// KORRIGIERT: 60° war zu hoch angesetzt - das zwang zu Neigungen nahe der
-// physischen Grenze des bequemen Landscape-Haltens (Gerät kippt dann selbst
-// die Bildschirmausrichtung). Realistischer bequemer Bereich liegt eher bei
-// ±25°. TILT_MAX bestimmt jetzt, ab welcher Neigung 100% erreicht wird.
 const TILT_MAX = 25; // Grad
-const DEADZONE = 3; // Grad, reduziert da TILT_MAX kleiner ist
-// KORRIGIERT: Exponent < 1 statt > 1. Eine Potenz über 1 DÄMPFT die Reaktion
-// im gesamten Bereich (genaues Gegenteil von "sensibel") - das war der
-// Fehler im vorherigen Versuch. Mit 0.5 (Quadratwurzel) wird die Reaktion
-// im unteren/mittleren Bereich VERSTÄRKT: schon kleine Neigungen erzeugen
-// spürbaren Ausschlag, die Kurve flacht erst nahe 100% leicht ab.
-//   Beispiel bei Exponent 0.5: 25% Neigung → 50% Ausschlag, 50% → 71%, 100% → 100%
+const DEADZONE = 3; // Grad
+
 const RESPONSE_CURVE_EXPONENT = 0.5;
 
-// Falls länger als diese Zeitspanne keine neue Gyro-Nachricht eintrifft,
-// gilt das Smartphone als "getrennt" (App geschlossen, Sperre, WLAN-Verlust).
-// Der MQTT-Client selbst bleibt dabei i.d.R. weiterhin mit dem Broker
-// verbunden (offline-Event greift hier NICHT), da nur das Smartphone die
-// Verbindung verliert, nicht der Desktop-Client. Ohne diesen Watchdog würde
-// der letzte empfangene Wert unbegrenzt weiter als aktueller Input gelten.
-// 1000ms = 20x der normalen Sendeintervalle (50ms/20Hz) – toleriert kurze
-// WLAN-Hänger, erkennt aber echte Abbrüche zuverlässig.
+// Falls länger als diese Zeitspanne keine neue Gyro-Nachricht eintrifft, gilt das Smartphone als "getrennt" (Handy inaktiv) und die Steuerung wird auf 0/0 zurückgesetzt.
 const PHONE_TIMEOUT_MS = 1000;
 
 interface CalibrationOffset {
@@ -55,18 +39,10 @@ function gyroToCarInput(
   gamma: number,
   offset: CalibrationOffset,
 ): CarInput {
-  // Offset wird VOR der Normalisierung abgezogen: die kalibrierte Position
-  // wird dadurch zum neuen Nullpunkt, TILT_MAX/DEADZONE bleiben unverändert
-  // um diesen neuen Nullpunkt herum gültig.
+  // Offset wird VOR der Normalisierung abgezogen: die kalibrierte Position wird dadurch zum neuen Nullpunkt
   const adjustedBeta = beta - offset.beta;
   const adjustedGamma = gamma - offset.gamma;
 
-  // Erst linear auf -1..1 normalisieren (clamped), DANACH die Potenzkurve
-  // anwenden. Vorzeichen wird separat über Math.sign() erhalten, da eine
-  // direkte Potenzierung negativer Basen mit geradem Exponenten (z.B. ^2)
-  // sonst fälschlich positiv würde – mit ungeradem Exponenten (^3) wäre das
-  // hier zwar kein Problem, aber die explizite Trennung macht die Funktion
-  // robust gegenüber späteren Änderungen des Exponenten.
   const normalize = (v: number): number => {
     const clamped = Math.max(-1, Math.min(1, v / TILT_MAX));
     return (
@@ -108,11 +84,7 @@ export class MQTTController {
   }
   /**
    * true, wenn der Broker erreichbar ist UND innerhalb der letzten
-   * PHONE_TIMEOUT_MS eine Gyro-Nachricht vom Smartphone eingetroffen ist.
-   * Wird genutzt, um zwischen "Broker verbunden, aber Handy inaktiv/getrennt"
-   * und "Steuerung aktiv" zu unterscheiden - isConnected allein sagt nur
-   * etwas über die Broker-Verbindung des Desktop-Clients aus, nicht darüber,
-   * ob gerade tatsächlich Steuerdaten ankommen.
+   * PHONE_TIMEOUT_MS eine Gyro-Nachricht vom Smartphone eingetroffen ist
    */
   get isPhoneActive(): boolean {
     if (!this._connected || this.lastMessageAt === null) return false;
@@ -148,11 +120,7 @@ export class MQTTController {
         this.client!.subscribe(`${TOPIC_PREFIX}/${this.sessionId}/gyro`);
         this.client!.subscribe(`${TOPIC_PREFIX}/${this.sessionId}/calibrate`);
 
-        // Watchdog: prüft alle 200ms, ob die letzte Nachricht zu lange
-        // zurückliegt. Eigenes Interval statt direkt im setTimeout-Reset-
-        // Muster, da mehrere schnelle Nachrichten sonst ständig neue Timer
-        // anlegen/abbrechen müssten - ein periodischer Check ist einfacher
-        // und für diesen Zweck ausreichend genau.
+        // Watchdog: prüft alle 200ms, ob die letzte Nachricht zu lange zurückliegt.
         this.watchdogInterval = setInterval(() => {
           if (!this.isPhoneActive && this.lastMessageAt !== null) {
             this._input = { throttle: 0, steering: 0 };

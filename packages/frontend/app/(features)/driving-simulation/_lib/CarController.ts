@@ -10,10 +10,7 @@ const EYE_HEIGHT = 1.2; // Kamera-Y im Car-Root-Raum
 
 // TEMPORÄRER DEBUG-SCHALTER: Bei true wird die Kamera weit nach hinten/oben
 // verschoben, um das KOMPLETTE Cockpit von außen wie in einer Vogel-
-// perspektive zu sehen, statt aus der engen Ego-Perspektive zu raten, wo
-// die eigentliche Augenposition relativ zur Cockpit-Geometrie liegt. Die
-// NORMALE Augenposition wird zusätzlich durch eine kleine rote Kugel
-// markiert. Auf false zurücksetzen für die normale Ego-Perspektive.
+// perspektive zu sehen
 const DEBUG_BIRDSEYE_VIEW = false;
 
 export class CarController implements ICarController {
@@ -39,7 +36,7 @@ export class CarController implements ICarController {
     // DEBUG: Markiert die NORMALE (Ego-Perspektive-)Augenposition mit einer
     // kleinen roten Kugel, damit im Vogelperspektive-Modus sichtbar wird,
     // wo die Kamera normalerweise sitzen würde, relativ zur Cockpit-
-    // Geometrie. ENTFERNEN, sobald DEBUG_BIRDSEYE_VIEW wieder false ist.
+    // Geometrie.
     if (DEBUG_BIRDSEYE_VIEW) {
       const marker = new THREE.Mesh(
         new THREE.SphereGeometry(0.05, 12, 12),
@@ -48,23 +45,12 @@ export class CarController implements ICarController {
       marker.position.set(DRIVER_X, EYE_HEIGHT, 0);
       this.root.add(marker);
     }
-
-    // KEIN automatischer Fallback-Innenraum mehr hier: World.tsx baut den
-    // Innenraum explizit via buildInterior() und ruft setSteeringWheel()
-    // auf. Der vorherige Konstruktor-Fallback erzeugte einen ZWEITEN,
-    // separaten Innenraum inkl. Lenkrad, der nie entfernt wurde - nur die
-    // steeringWheel-Referenz wurde überschrieben, das erste (jetzt verwaiste)
-    // Lenkrad blieb sichtbar in der Ausgangsposition stehen, da es nie
-    // animiert wurde. Falls CarController jemals ohne World.tsx-Integration
-    // genutzt wird, muss der Aufrufer selbst buildInterior() + add() +
-    // setSteeringWheel() aufrufen.
   }
 
   setSteeringWheel(wheel: THREE.Object3D): void {
     this.steeringWheel = wheel;
   }
 
-  // Optionale Integration mit Kollege 1 (Konfigurator-Interface)
   attachModel(model: CarModel): void {
     if (model.interior) {
       this.root.add(model.interior);
@@ -94,13 +80,7 @@ export class CarController implements ICarController {
 
   update(delta: number, input: CarInput): void {
     // Geschwindigkeit: throttle bestimmt jetzt eine ZIELGESCHWINDIGKEIT
-    // (proportional zu MAX_SPEED), nicht mehr nur die Beschleunigungsrate.
-    // Vorher akkumulierte sich speed kontinuierlich weiter, solange
-    // throttle != 0 war – das machte es unmöglich, eine konstante
-    // Zwischengeschwindigkeit zu halten, da man immer Richtung MAX_SPEED
-    // weiterbeschleunigte. Jetzt: 50% Neigung → Zielgeschwindigkeit 50%
-    // von MAX_SPEED, das Auto nähert sich diesem Wert an und HÄLT ihn,
-    // solange die Neigung konstant bleibt.
+    // (proportional zu MAX_SPEED)
     const targetSpeed =
       input.throttle > 0
         ? input.throttle * MAX_SPEED

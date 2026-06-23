@@ -9,18 +9,8 @@ export interface InteriorParts {
   rightMirrorSurface: THREE.Mesh; // reiner Platzhalter, kein RTT
 }
 
-// ── Referenzpunkte ─────────────────────────────────────────────────
-// Alle Maße in Metern, relativ zur Kameraposition (0,0,0).
-// Z negativ = vor dem Fahrer, Y positiv = oben, X positiv = rechts.
-//
-// DRIVER_X leicht von -0.35 auf -0.30 angepasst – ermöglicht einen saubereren,
-// weniger extremen Lenksäulen-Winkel zwischen Dashboard und Lenkrad.
 export const DRIVER_X = -1.3;
 
-// rotation.x für Windschutzscheibe/A-Säulen. Positiv = der lokal obere Rand
-// (+y) wandert nach +Z (nach hinten, zum Fahrer) – das ist die korrekte
-// Richtung für eine nach hinten geneigte Frontscheibe. Verifiziert anhand
-// Screenshot: negatives Vorzeichen kippt die Scheibe sichtbar nach vorne weg.
 const WS_TILT = 0.42;
 
 // Windschutzscheiben-Eckpunkte (vor Rotation, lokale Box-Maße)
@@ -58,13 +48,6 @@ const M_HUB = new THREE.MeshStandardMaterial({
   metalness: 0.35,
 });
 
-// useEffect(() => {
-//   setWindowTint(tintOpacity, gltf);
-// }, [gltf, tintOpacity]);
-
-// Reine Platzhalter-Spiegelflächen: heller/reflektierender wirkend, aber
-// ohne RTT – ein helles, leicht bläuliches Grau mit etwas Glanz simuliert
-// eine reflektierende Oberfläche ohne tatsächliches Spiegelbild.
 function makeMirrorMaterial(): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color: 0x8a98a8,
@@ -76,24 +59,6 @@ function makeMirrorMaterial(): THREE.MeshStandardMaterial {
     polygonOffsetUnits: -1,
   });
 }
-const setWindowTint = (opacity: number, gltf: any) => {
-  gltf.scene.traverse((child) => {
-    if (child instanceof THREE.Mesh) {
-      const materials = Array.isArray(child.material)
-        ? child.material
-        : [child.material];
-      materials.forEach((mat) => {
-        if (mat instanceof THREE.MeshStandardMaterial) {
-          if (child.name.includes("Window") || mat.name.includes("Window")) {
-            mat.transparent = true;
-            mat.opacity = opacity;
-            mat.color.set("#000000");
-          }
-        }
-      });
-    }
-  });
-};
 
 function bx(
   w: number,
@@ -115,12 +80,6 @@ function mirrorPlane(w: number, h: number): THREE.Mesh {
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), makeMirrorMaterial());
 }
 
-/**
- * Erstellt einen Zylinder, der exakt zwischen zwei Punkten verläuft.
- * Rotation wird aus dem tatsächlichen Richtungsvektor berechnet (Quaternion),
- * keine geschätzten Eulerwinkel – verhindert Versatz zwischen Bauteilen,
- * die aneinander anschließen müssen.
- */
 function cylinderBetween(
   start: THREE.Vector3,
   end: THREE.Vector3,
@@ -264,20 +223,6 @@ export function buildInterior(): InteriorParts {
   );
 
   const rearviewSurface = mirrorPlane(0.215, 0.067);
-  // Fläche nochmals erhöht, nahezu auf volle Halterungsgröße (0.22 x 0.07) -
-  // vorheriger Versuch (0.205 x 0.06) liess weiterhin einen sichtbaren Rand.
-  // Nur noch ca. 2-3mm Rand auf jeder Seite als minimaler "Rahmen"-Look.
-  // Abstand zur Halterung deutlich vergrößert: vorher nur 0.016 (1.6mm) vor
-  // der Halterungs-Vorderkante (Halterungstiefe 0.03 → Vorderkante bei
-  // mirrorMountZ+0.015) - das war zu knapp, die Halterung konnte die
-  // Spiegelfläche je nach Blickwinkel der Hauptkamera überdecken. Jetzt
-  // 0.04 (4cm) Abstand zur Halterungsmitte, klar sichtbar davor.
-  // Abstand zur Halterung: 0.025 (statt vorher 0.04) - reduziert, um die
-  // Parallaxen-Verschiebung bei schrägem Blickwinkel (Kamera sitzt bei
-  // DRIVER_X=-0.30, nicht zentriert) zu minimieren, bei der die Fläche
-  // relativ zur Halterungsöffnung leicht verschoben wirken kann, je weiter
-  // sie davor schwebt. Bleibt weiterhin klar über dem ursprünglichen,
-  // zu knappen Wert von 0.016, der zum Verdecken führte.
   rearviewSurface.position.set(0, mirrorMountY, mirrorMountZ + 0.025);
   rearviewSurface.rotation.x = WS_TILT;
   group.add(rearviewSurface);

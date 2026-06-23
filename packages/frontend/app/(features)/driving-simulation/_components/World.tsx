@@ -10,11 +10,7 @@ import { TrackGenerator } from "../_lib/TrackGenerator";
 import { MQTTController } from "../_lib/MQTTController";
 import type { CarInput } from "../_lib/types";
 
-// Testweiser Schalter für das externe GLTF-Cockpit-Modell. Auf false
-// zurücksetzen, um sofort zum bestehenden, selbst gebauten Innenraum
-// zurückzukehren - keine weiteren Änderungen nötig. Bei Problemen mit dem
-// GLTF-Modell einfach hier auf false setzen, statt Code zu entfernen.
-const USE_GLTF_INTERIOR = true;
+export const USE_GLTF_INTERIOR = true; // true = GLTF-Cockpit, false = buildInterior()
 
 function getKeyboardInput(keys: Record<string, boolean>): CarInput {
   return {
@@ -33,11 +29,6 @@ export default function World() {
   const [mqttConnected, setMqttConnected] = useState(false);
   const [sessionId, setSessionId] = useState("");
   const [speedKmh, setSpeedKmh] = useState(0);
-  // Ersetzt die bisherige reine mqttConnected-Anzeige um einen dritten
-  // Zustand: Broker verbunden, aber das Smartphone selbst sendet aktuell
-  // keine Daten mehr (App geschlossen, gesperrt, WLAN weg). Vorher blieb
-  // das in der UI unsichtbar, obwohl der MQTTController.ts-Watchdog den
-  // Input bereits intern zurücksetzt.
   const [phoneStatus, setPhoneStatus] = useState<PhoneStatus>("connecting");
 
   useEffect(() => {
@@ -63,11 +54,6 @@ export default function World() {
     const carController = new CarController(sceneManager.camera);
     sceneManager.scene.add(carController.root);
 
-    // Async gekapselt, da loadGltfInterior() ein Promise zurückgibt (Modell-
-    // Ladezeit), buildInterior() aber synchron ist. Der gesamte restliche
-    // Aufbau (Spiegel-Setup, Game-Loop) wartet auf das Ergebnis, damit
-    // carController.root erst befüllt wird, wenn der Innenraum bereit ist -
-    // unabhängig davon, welcher der beiden Pfade gewählt wurde.
     let cleanupFn: (() => void) | undefined;
 
     async function setupInteriorAndStart() {
@@ -75,11 +61,6 @@ export default function World() {
         ? await loadGltfInterior()
         : buildInterior();
 
-      // Fallback: falls das GLTF-Laden fehlschlägt (Datei nicht gefunden,
-      // ungültiges Format etc.), automatisch auf den bewährten, selbst
-      // gebauten Innenraum zurückfallen statt mit einer leeren Szene zu
-      // enden - macht das Testen risikofrei, auch wenn das Modell mal
-      // nicht lädt.
       const {
         group: interior,
         steeringWheel,
@@ -96,11 +77,6 @@ export default function World() {
       }
 
       if (!mountedRef.current) {
-        // Komponente wurde bereits unmounted, während das (ggf. asynchrone)
-        // Laden des Interiors noch lief. mqttController.connect() wurde oben
-        // bereits gestartet - muss trotzdem bereinigt werden, sonst bleibt
-        // eine MQTT-Verbindung offen, ohne dass der normale cleanupFn-Pfad
-        // (unten) je zugewiesen wurde.
         mqttController.disconnect();
         return;
       }
@@ -108,16 +84,6 @@ export default function World() {
       carController.root.add(interior);
       carController.setSteeringWheel(steeringWheel);
 
-      // Eigener Layer für alle Spiegelflächen-Meshes selbst (nicht für die
-      // restliche Szene). Löst die Feedback-Loop-Problematik: Eine Spiegel-
-      // kamera rendert in ihr eigenes Render-Target, dessen Textur aber von
-      // den Spiegelflächen-Materials referenziert wird - befindet sich eine
-      // Spiegelfläche im Sichtfeld EINER der Spiegelkameras (z.B. sieht die
-      // Rückspiegel-Kamera einen Außenspiegel im Hintergrund), entsteht ein
-      // Zirkelbezug, der die GPU-Warnung "Feedback loop formed between
-      // Framebuffer and active Texture" auslöst und im schlimmsten Fall dazu
-      // führt, dass die Zieltextur nie korrekt befüllt wird - das Mesh zeigt
-      // dann dauerhaft seine ursprüngliche Platzhalter-Farbe statt des RTT-Bilds.
       const MIRROR_SURFACE_LAYER = 1;
       rearviewSurface.layers.set(MIRROR_SURFACE_LAYER);
       leftMirrorSurface.layers.set(MIRROR_SURFACE_LAYER);
@@ -182,11 +148,6 @@ export default function World() {
       rightMirrorCam.layers.disable(MIRROR_SURFACE_LAYER);
       carController.root.add(rightMirrorCam);
 
-      // --- Material-Zuweisung GESAMMELT am Ende, nachdem alle Kameras und
-      // Render-Targets vollständig eingerichtet sind. Testweise umstrukturiert,
-      // um auszuschließen, dass eine spätere Kamera-Operation eine frühere
-      // material-Zuweisung versehentlich überschreibt (z.B. falls buildInterior
-      // intern irgendwo erneut auf dieselbe Objektreferenz zugreift).
       mirrorRT.texture.repeat.set(-1, 1);
       mirrorRT.texture.offset.set(1, 0);
       rearviewSurface.material = new THREE.MeshBasicMaterial({
