@@ -47,6 +47,12 @@ ENV NODE_ENV=production
 # This caches the .next/cache directory across builds, but it also prevents
 # .next/cache/fetch-cache from being included in the final image, meaning
 # cached fetch responses from the build won't be available at runtime.
+ARG NEXT_PUBLIC_MQTT_BROKER_HOST
+ARG NEXT_PUBLIC_MQTT_BROKER_PORT
+ARG NEXT_PUBLIC_MQTT_WS_PORT
+ENV NEXT_PUBLIC_MQTT_BROKER_HOST=$NEXT_PUBLIC_MQTT_BROKER_HOST
+ENV NEXT_PUBLIC_MQTT_BROKER_PORT=$NEXT_PUBLIC_MQTT_BROKER_PORT
+ENV NEXT_PUBLIC_MQTT_WS_PORT=$NEXT_PUBLIC_MQTT_WS_PORT
 RUN corepack enable pnpm && pnpm build
 
 # ============================================
