@@ -6,11 +6,16 @@
     "packages/*"
   ],
   "scripts": {
+    "setup-dev": "bash setup-dev.sh",
     "dev:frontend": "npm run dev --workspace=packages/frontend",
-    "dev:backend": "npm run dev --workspace=packages/backend",
+    "dev:car_models": "npm run dev --workspace=packages/car_models",
     "dev:service-mypsecars": "npm run dev --workspace=packages/service-mypsecars",
+    "dev:webshop": "npm run dev --workspace=packages/webshop",
+    "dev": "npm run dev:car_models & npm run dev:frontend & npm run dev:service-mypsecars & npm run dev:webshop",    
     "build:frontend": "npm run build --workspace=packages/frontend",
-    "build:backend": "npm run build --workspace=packages/backend"
+    "build:car_models": "npm run build --workspace=packages/car_models",
+    "build:mypsecars": "npm run build --workspace=packages/mypsecars",
+    "build:webshop": "npm run build --workspace=packages/webshop"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
