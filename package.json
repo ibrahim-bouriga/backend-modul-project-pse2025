@@ -6,12 +6,18 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:frontend": "npm run dev --workspace=frontend",
-    "dev:backend": "npm run dev --workspace=backend",
-    "dev": "npm run dev:backend & npm run dev:frontend",
-    "build:frontend": "npm run build --workspace=frontend",
-    "build:backend": "npm run build --workspace=backend",
-    "build": "npm run build:backend && npm run build:frontend"
+    "setup-dev": "bash ./scripts/setup-dev.sh",
+    "dev:frontend": "npm run dev --workspace=packages/frontend",
+    "dev:car_models": "npm run dev --workspace=packages/car_models",
+    "dev:service-mypsecars": "npm run dev --workspace=packages/service-mypsecars",
+    "dev:webshop": "npm run dev --workspace=packages/webshop",
+    "dev:world-drive": "npm run dev --workspace=packages/service-world-drive",
+    "dev": "npm run dev:car_models & npm run dev:frontend & npm run dev:service-mypsecars & npm run dev:webshop & npm run dev:world-drive",
+    "build:frontend": "npm run build --workspace=packages/frontend",
+    "build:car_models": "npm run build --workspace=packages/car_models",
+    "build:mypsecars": "npm run build --workspace=packages/mypsecars",
+    "build:webshop": "npm run build --workspace=packages/webshop",
+    "build:world-drive": "npm run build --workspace=packages/service-world-drive"
   },
   "devDependencies": {
     "typescript": "^5.3.3"

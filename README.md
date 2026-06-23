@@ -1,8 +1,25 @@
 # PSE 2025 – Backend Modul Project
 
-This monorepo contains one shared frontend and multiple microservices. The `packages/backend` folder is a **template** — copy it to create your own microservice.
+> [!Note]
+> To enable the deployment via HTTPS, we are using NGROK to tunnel our local URIs to a hosted solution. You must configure the NGROK_AUTHTOKEN environment variable in your local .env
+
+### Create .env (required)
+```sh
+cp .env.example .env
+```
+Don't forget to set the NGROK_AUTHTOKEN!
+
+## Deploy production ready application via docker
+
+```sh
+docker compose --profile prod up --build -d
+```
+
+Builds and runs every service in containers. Use this to verify the production setup, not for day-to-day development.
 
 ## Architecture
+
+This monorepo contains one shared frontend and multiple microservices. 
 
 ```
 packages/
@@ -59,56 +76,64 @@ Each microservice is an independent Express server with its own port, database c
 
 ## Infrastructure
 
-| Service    | What it is              | Port(s)            |
-|------------|-------------------------|--------------------|
-| PostgreSQL | Relational database     | 5432               |
-| Mosquitto  | MQTT broker             | 1883 (TCP), 9001 (WebSocket) |
-| MinIO      | Object / file storage   | 9000 (API), 9002 (Web UI)   |
+| Service                    | What it is              | Port(s)                      |
+|----------------------------|-------------------------|------------------------------|
+| PostgreSQL (car_models)    | Car catalogue database  | 5432                         |
+| PostgreSQL (webshop)       | Webshop database        | 5433                         |
+| Redis                      | Session / cache store   | 6379                         |
+| Mosquitto                  | MQTT broker             | 1883 (TCP), 9001 (WebSocket) |
+| MinIO                      | Object / file storage   | 9000 (API), 9002 (Web UI)    |
 
-## Development workflow
+## Local development
 
-### Recommended: run everything locally
-
-The easiest way to develop is to start infra in Docker and run application code directly on your machine — no container rebuilds on every change.
-
-```sh
-cp .env.example .env                       # first time only
-docker compose --profile dev up -d         # start Postgres, MQTT, MinIO
-npm run dev                                # start backend + frontend in parallel
-```
-
-`npm run dev` at the repo root runs both `packages/backend` and `packages/frontend` concurrently:
-
-| Service  | URL                    |
-|----------|------------------------|
-| Frontend | http://localhost:3000  |
-| Backend  | http://localhost:4000  |
-
-To run only one at a time:
+### First-time setup
 
 ```sh
-npm run dev:backend    # backend only  (port 4000)
-npm run dev:frontend   # frontend only (port 3000)
+# 1. Start infrastructure (databases, MQTT, MinIO, Redis)
+docker compose --profile dev up -d
+
+# 2. Create a root .env (all values have safe defaults)
+cp .env.example .env
+
+# 3. Add NGROK_AUTHTOKEN to root .env
+
+# 4. Install dependencies, generate per-package .env files, and set up databases
+npm run setup-dev
 ```
 
-### Override the backend URL (optional)
+`npm run setup-dev` runs `setup-dev.sh`, which:
+- Calls `scripts/generate-env.sh` to create a `.env` for every package under `packages/`
+- Installs all npm dependencies
+- Detects every package that has a `prisma.config.ts` and either runs
+  `prisma migrate deploy` (when a `migrations/` folder exists) or `prisma db push`
 
-Create `packages/frontend/.env.local` to point at a different backend:
+Run `npm run setup-dev` again whenever you change the root `.env` or pull new migrations.
 
-```bash
-NEXT_PUBLIC_BACKEND_URL=http://localhost:4000
-```
-
-Defaults to `http://localhost:4000` when not set.
-
-
-### Production: full Docker stack
+### Running services
 
 ```sh
-docker compose --profile prod up --build -d
+npm run dev          # start all services in parallel
 ```
 
-This builds and runs every service (frontend, backend, infra) in containers. Use this to verify the production setup, not for day-to-day development.
+Or individually:
+
+```sh
+npm run dev:car_models        # Car catalogue API  — http://localhost:4001
+npm run dev:webshop           # Webshop API        — http://localhost:4003
+npm run dev:service-mypsecars # MyPSECars service  — http://localhost:4004
+npm run dev:frontend          # Next.js frontend   — http://localhost:3000
+```
+
+### Service URLs
+
+| Service           | URL                      |
+|-------------------|--------------------------|
+| Frontend          | http://localhost:3000    |
+| Car Models API    | http://localhost:4001    |
+| Webshop API       | http://localhost:4003    |
+| MyPSECars Service | http://localhost:4004    |
+| MinIO Web UI      | http://localhost:9002    |
+
 
 ## Documentation
 
