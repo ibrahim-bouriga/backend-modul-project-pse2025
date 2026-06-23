@@ -95,14 +95,14 @@ docker compose --profile dev up -d
 # 2. Create a root .env (all values have safe defaults)
 cp .env.example .env
 
-3
+# 3. Add NGROK_AUTHTOKEN to root .env
 
 # 4. Install dependencies, generate per-package .env files, and set up databases
 npm run setup-dev
 ```
 
 `npm run setup-dev` runs `setup-dev.sh`, which:
-- Calls `generate-env.sh` to create a `.env` for every package under `packages/`
+- Calls `scripts/generate-env.sh` to create a `.env` for every package under `packages/`
 - Installs all npm dependencies
 - Detects every package that has a `prisma.config.ts` and either runs
   `prisma migrate deploy` (when a `migrations/` folder exists) or `prisma db push`

@@ -6,7 +6,7 @@
     "packages/*"
   ],
   "scripts": {
-    "setup-dev": "bash setup-dev.sh",
+    "setup-dev": "bash ./scripts/setup-dev.sh",
     "dev:frontend": "npm run dev --workspace=packages/frontend",
     "dev:car_models": "npm run dev --workspace=packages/car_models",
     "dev:service-mypsecars": "npm run dev --workspace=packages/service-mypsecars",

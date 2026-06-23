@@ -10,7 +10,7 @@ set -euo pipefail
 
 # ── Step 1: Generate per-package .env files ──────────────────────────────────
 echo "Generating per-package .env files..."
-bash generate-env.sh "${1:-.env}"
+bash ./scripts/generate-env.sh "${1:-.env}"
 
 # ── Step 2: Install dependencies ─────────────────────────────────────────────
 echo ""
