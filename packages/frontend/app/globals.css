@@ -1,15 +1,10 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-/* Tailwind v4 preflight resets SVG styles that Leaflet depends on.
-   These rules restore correct rendering for the vector overlay. */
+/* Tailwind v4 preflight sets svg { display: block } which clips the overlay. */
 .leaflet-overlay-pane svg {
   overflow: visible;
   position: absolute;
-}
-.leaflet-overlay-pane path {
-  fill: revert;
-  stroke: revert;
 }
 
 :root {

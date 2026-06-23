@@ -26,10 +26,7 @@ export default function QRSetup() {
         <QRCode value={qrValue} size={120} />
       </div>
       <div className="text-center">
-        <p className="text-xs font-semibold text-white">Mit Smartphone scannen</p>
-        {shortUrl && (
-          <p className="text-xs text-zinc-500 font-mono mt-0.5 truncate max-w-[140px]">{shortUrl}</p>
-        )}
+        <p className="text-xs font-semibold text-white">Scannen für Übermittlung des aktuellen Standortes deines Fahrzeugs.</p>
       </div>
     </div>
   );
