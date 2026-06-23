@@ -1,7 +1,7 @@
 'use client';
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment, useFBX, useGLTF } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, useFBX, useGLTF, Html } from '@react-three/drei';
 import { Suspense, useEffect, useRef, MutableRefObject } from 'react';
 import * as THREE from 'three';
 
@@ -131,8 +131,8 @@ function CarModel({ bodyColor, wheelColor, brakeColor, tintOpacity }: CarModelPr
 
 const NORMAL_CAMERA_POSITION = new THREE.Vector3(5, 3, 5);
 const NORMAL_CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
-const COCKPIT_CAMERA_POSITION = new THREE.Vector3(0.8, 0.8, 0.2);
-const COCKPIT_CAMERA_TARGET = new THREE.Vector3(0.35, 0.4, 5);
+const COCKPIT_CAMERA_POSITION = new THREE.Vector3(0.77, 0.8, 0.2);
+const COCKPIT_CAMERA_TARGET = new THREE.Vector3(1, 0.4, 5);
 
 function CameraController({
   cockpitMode,
@@ -180,6 +180,25 @@ function CameraController({
   return null;
 }
 
+interface CockpitButtonProps {
+  position: [number, number, number];
+  label: string;
+  onClick: () => void;
+}
+
+function CockpitButton({ position, label, onClick }: CockpitButtonProps) {
+  return (
+    <Html position={position} center>
+      <button
+        onClick={onClick}
+        className="px-10 py-6 bg-zinc-900/85 hover:bg-zinc-700/95 text-gray-100 border border-white/25 rounded-lg text-xl font-bold font-sans cursor-pointer backdrop-blur whitespace-nowrap select-none transition-colors"
+      >
+        {label}
+      </button>
+    </Html>
+  );
+}
+
 /**
  * Loading fallback component
  */
@@ -215,14 +234,27 @@ export interface CarViewer3DProps {
   tintOpacity: number;
   isLoading?: boolean;
   cockpitMode?: boolean;
+  /** Called when the cockpit button is clicked. */
+  onCockpitButtonClick?: () => void;
 }
 
 /**
  * Main 3D Car Viewer Component
  * Renders an interactive 3D car model with orbit controls
  */
-export default function CarViewer3D({ bodyColor, wheelColor, brakeColor, tintOpacity, isLoading = false, cockpitMode = false }: CarViewer3DProps) {
+export default function CarViewer3D({
+  bodyColor,
+  wheelColor,
+  brakeColor,
+  tintOpacity,
+  isLoading = false,
+  cockpitMode = false,
+  onCockpitButtonClick = () => console.log('Cockpit button clicked'),
+}: CarViewer3DProps) {
   const controlsRef = useRef<any>(null);
+
+  const COCKPIT_BUTTON_POSITION: [number, number, number] = [0.78, 0.87, 1];
+  const COCKPIT_BUTTON_LABEL = 'Start Driving Simulator!';
 
   return (
     <div className="w-full h-full bg-zinc-900 rounded-lg overflow-hidden">
@@ -258,6 +290,15 @@ export default function CarViewer3D({ bodyColor, wheelColor, brakeColor, tintOpa
           <CarModel bodyColor={bodyColor} wheelColor={wheelColor} brakeColor={brakeColor} tintOpacity={tintOpacity} />
         </Suspense>
         
+        {/* Cockpit Button — only visible in cockpit mode */}
+        {cockpitMode && (
+          <CockpitButton
+            position={COCKPIT_BUTTON_POSITION}
+            label={COCKPIT_BUTTON_LABEL}
+            onClick={onCockpitButtonClick}
+          />
+        )}
+
         {/* Camera Controller */}
         <CameraController cockpitMode={cockpitMode} controlsRef={controlsRef} />
 
