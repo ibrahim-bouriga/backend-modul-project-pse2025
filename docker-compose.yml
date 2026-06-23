@@ -60,16 +60,6 @@ services:
       - frontend
     restart: unless-stopped
 
-  ngrok-dev:
-    profiles: ["dev"]
-    image: ngrok/ngrok:latest
-    command: http host.docker.internal:3000
-    environment:
-      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
-    ports:
-      - "4040:4040"
-    restart: unless-stopped
-
   service-mypsecars:
     profiles: ["prod"]
     build:
