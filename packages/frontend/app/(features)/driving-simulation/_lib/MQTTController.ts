@@ -223,7 +223,7 @@ export class MQTTController {
   async renderQRCode(canvas: HTMLCanvasElement, origin: string): Promise<void> {
     const tunnelUrl = await this.fetchTunnelUrl();
     console.log("Tunnel-URL:", tunnelUrl);
-    const url = `${tunnelUrl}/driving-simulation/gyro?session=${this.sessionId}`;
+    const url = `${tunnelUrl}/m/driving-simulation?session=${this.sessionId}`;
     return QRCode.toCanvas(canvas, url, { width: 180, margin: 1 });
   }
 

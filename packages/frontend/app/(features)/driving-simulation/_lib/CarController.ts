@@ -8,6 +8,14 @@ const DECELERATION = 8;
 const TURN_SPEED = 1.4; // rad/s bei voller Lenkung und Maximalgeschwindigkeit
 const EYE_HEIGHT = 1.2; // Kamera-Y im Car-Root-Raum
 
+// TEMPORÄRER DEBUG-SCHALTER: Bei true wird die Kamera weit nach hinten/oben
+// verschoben, um das KOMPLETTE Cockpit von außen wie in einer Vogel-
+// perspektive zu sehen, statt aus der engen Ego-Perspektive zu raten, wo
+// die eigentliche Augenposition relativ zur Cockpit-Geometrie liegt. Die
+// NORMALE Augenposition wird zusätzlich durch eine kleine rote Kugel
+// markiert. Auf false zurücksetzen für die normale Ego-Perspektive.
+const DEBUG_BIRDSEYE_VIEW = false;
+
 export class CarController implements ICarController {
   readonly root: THREE.Object3D;
   private steeringWheel: THREE.Object3D | null = null;
@@ -17,9 +25,29 @@ export class CarController implements ICarController {
   constructor(camera: THREE.Camera) {
     this.root = new THREE.Object3D();
     // Kamera ist Kind-Objekt des Root → bewegt sich mit dem Fahrzeug
-    camera.position.set(DRIVER_X, EYE_HEIGHT, 0);
-    camera.rotation.set(0, 0, 0);
+    if (DEBUG_BIRDSEYE_VIEW) {
+      // Weit nach hinten/oben verschoben, leicht nach unten geneigt, um das
+      // gesamte Cockpit von außen zu überblicken.
+      camera.position.set(DRIVER_X, EYE_HEIGHT + 3, 4);
+      camera.rotation.set(-0.6, 0, 0); // nach unten geneigt
+    } else {
+      camera.position.set(DRIVER_X, EYE_HEIGHT, -1.0);
+      camera.rotation.set(0, 0, 0);
+    }
     this.root.add(camera);
+
+    // DEBUG: Markiert die NORMALE (Ego-Perspektive-)Augenposition mit einer
+    // kleinen roten Kugel, damit im Vogelperspektive-Modus sichtbar wird,
+    // wo die Kamera normalerweise sitzen würde, relativ zur Cockpit-
+    // Geometrie. ENTFERNEN, sobald DEBUG_BIRDSEYE_VIEW wieder false ist.
+    if (DEBUG_BIRDSEYE_VIEW) {
+      const marker = new THREE.Mesh(
+        new THREE.SphereGeometry(0.05, 12, 12),
+        new THREE.MeshBasicMaterial({ color: 0xff0000 }),
+      );
+      marker.position.set(DRIVER_X, EYE_HEIGHT, 0);
+      this.root.add(marker);
+    }
 
     // KEIN automatischer Fallback-Innenraum mehr hier: World.tsx baut den
     // Innenraum explizit via buildInterior() und ruft setSteeringWheel()
@@ -119,8 +147,8 @@ export class CarController implements ICarController {
     // Lenkrad-Animation: rotation.z, max ±72°, smooth per lerp
     if (this.steeringWheel) {
       const target = -input.steering * (Math.PI * 0.4);
-      this.steeringWheel.rotation.z = THREE.MathUtils.lerp(
-        this.steeringWheel.rotation.z,
+      this.steeringWheel.rotation.y = THREE.MathUtils.lerp(
+        this.steeringWheel.rotation.y,
         target,
         Math.min(1, delta * 10),
       );
