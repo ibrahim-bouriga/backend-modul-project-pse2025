@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import mqtt, { MqttClient } from "mqtt";
 
-const TOPIC          = "psecars/worlddrive/telemetry";
+const TOPIC          = "psecars/worlddrive/gps/telemetry";
 const BROKER_WSS     = "wss://broker.hivemq.com:8884/mqtt";
-const MAX_ACCURACY_M = 30;
+const MAX_ACCURACY_M = 50;
 
 type MqttStatus = "connecting" | "connected" | "error" | "idle";
 type GpsStatus  = "requesting" | "active" | "error";
