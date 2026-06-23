@@ -13,6 +13,6 @@ RUN npm install --omit=dev
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-EXPOSE 4000
+EXPOSE 4003
 # Run pending migrations then start the server
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
