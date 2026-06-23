@@ -1,4 +1,5 @@
-//import BackendHealthCheck from "./product/ExampleComponent";
+//page.tsx
+// //import BackendHealthCheck from "./product/ExampleComponent";
 import { BACKEND_URL } from "../../_lib/api";
 import FilterBar from "../../_components/FilterBar";
 import Link from "next/link";

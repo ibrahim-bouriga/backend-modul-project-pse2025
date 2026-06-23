@@ -1,3 +1,5 @@
+//product/[slug]/page.tsx
+
 import { BACKEND_URL } from "../../../../_lib/api";
 import { notFound } from "next/navigation";
 import AddToCartForm from "../../../../_components/AddToCartForm";
