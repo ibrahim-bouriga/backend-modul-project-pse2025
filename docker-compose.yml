@@ -28,6 +28,11 @@ services:
     environment:
       PORT: "4003"
       MQTT_BROKER_URL: "mqtt://broker.hivemq.com:1883"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pse2025}"
+      ENABLE_SIMULATOR: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   frontend:
