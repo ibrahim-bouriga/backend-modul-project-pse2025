@@ -7,11 +7,13 @@
     "start": "next start"
   },
   "dependencies": {
+    "mqtt": "^5.15.1",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
     "next": "latest",
     "react": "^19",
     "react-dom": "^19",
+    "react-qr-code": "^2.2.0",
     "react-leaflet": "^5.0.0",
     "three": "^0.184.0"
   },
