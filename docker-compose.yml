@@ -1,23 +1,4 @@
 services:
-  backend:
-    profiles: ["prod"]
-    build:
-      context: ./packages/backend
-      dockerfile: Dockerfile
-    ports:
-      - "${BACKEND_PORT:-4000}:4000"
-    environment:
-      PORT: "4000"
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pse2025}"
-      MQTT_BROKER_HOST: mosquitto
-      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mosquitto:
-        condition: service_started
-    restart: unless-stopped
-
   service-world-drive:
     profiles: ["prod"]
     build:
@@ -28,10 +9,10 @@ services:
     environment:
       PORT: "4003"
       MQTT_BROKER_URL: "mqtt://broker.hivemq.com:1883"
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-pse2025}"
+      DATABASE_URL: "postgresql://${WORLD_DRIVE_POSTGRES_USER:-postgres}:${WORLD_DRIVE_POSTGRES_PASSWORD:-changeme}@postgres-world-drive:5432/${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
       ENABLE_SIMULATOR: "true"
     depends_on:
-      postgres:
+      postgres-world-drive:
         condition: service_healthy
     restart: unless-stopped
 
@@ -52,8 +33,6 @@ services:
       WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:4003"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
-    depends_on:
-      - backend
     restart: unless-stopped
 
   ngrok:
@@ -78,19 +57,19 @@ services:
       - mosquitto_log:/mosquitto/log
     restart: unless-stopped
 
-  postgres:
+  postgres-world-drive:
     profiles: ["dev", "prod"]
     image: postgres:16-alpine
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${WORLD_DRIVE_POSTGRES_PORT:-5433}:5432"
     environment:
-      POSTGRES_DB: "${POSTGRES_DB:-pse2025}"
-      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme}"
+      POSTGRES_DB: "${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
+      POSTGRES_USER: "${WORLD_DRIVE_POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${WORLD_DRIVE_POSTGRES_PASSWORD:-changeme}"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_world_drive_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-pse2025}"]
+      test: ["CMD-SHELL", "pg_isready -U ${WORLD_DRIVE_POSTGRES_USER:-postgres} -d ${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -116,7 +95,7 @@ services:
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  postgres_world_drive_data:
   mosquitto_data:
   mosquitto_log:
   minio_data:

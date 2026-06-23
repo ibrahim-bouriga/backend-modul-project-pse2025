@@ -24,8 +24,8 @@ const FRANKFURT_ROUTE: Array<[number, number]> = [
 ];
 
 const SEED_TRIP_IDS = [
-  'seed-trip-a-0', 'seed-trip-a-1', 'seed-trip-a-2',
-  'seed-trip-b-0', 'seed-trip-b-1', 'seed-trip-b-2',
+  'seed-v2-trip-a-0', 'seed-v2-trip-a-1', 'seed-v2-trip-a-2',
+  'seed-v2-trip-b-0', 'seed-v2-trip-b-1', 'seed-v2-trip-b-2',
 ];
 
 function interpolate(a: [number, number], b: [number, number], steps: number): Array<[number, number]> {
@@ -46,6 +46,14 @@ function makeRoute(keypoints: Array<[number, number]>, stepsPerSegment = 12): Ar
 }
 
 export async function runSeed(prisma: PrismaClient): Promise<void> {
+  // Remove legacy hardcoded GPS car (replaced by dynamic registration)
+  // Trips must be deleted first due to foreign key constraint
+  const legacyTrips = await prisma.trip.findMany({ where: { carId: 'gps' }, select: { id: true } });
+  if (legacyTrips.length > 0) {
+    await prisma.trip.deleteMany({ where: { carId: 'gps' } });
+  }
+  await prisma.car.deleteMany({ where: { id: 'gps' } });
+
   for (const car of CARS) {
     await prisma.car.upsert({ where: { id: car.id }, update: {}, create: car });
   }
@@ -59,12 +67,12 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
 
   const now = Date.now();
   const fakeTrips = [
-    { id: 'seed-trip-a-0', carId: 'car-a', route: STUTTGART_ROUTE, startOffset: 2  * 3600_000, duration: 9  * 60_000 },
-    { id: 'seed-trip-a-1', carId: 'car-a', route: STUTTGART_ROUTE, startOffset: 26 * 3600_000, duration: 12 * 60_000 },
-    { id: 'seed-trip-a-2', carId: 'car-a', route: STUTTGART_ROUTE, startOffset: 50 * 3600_000, duration: 7  * 60_000 },
-    { id: 'seed-trip-b-0', carId: 'car-b', route: FRANKFURT_ROUTE, startOffset: 3  * 3600_000, duration: 11 * 60_000 },
-    { id: 'seed-trip-b-1', carId: 'car-b', route: FRANKFURT_ROUTE, startOffset: 28 * 3600_000, duration: 14 * 60_000 },
-    { id: 'seed-trip-b-2', carId: 'car-b', route: FRANKFURT_ROUTE, startOffset: 52 * 3600_000, duration: 8  * 60_000 },
+    { id: 'seed-v2-trip-a-0', carId: 'car-a', route: STUTTGART_ROUTE, startOffset: 2  * 3600_000, duration: 9  * 60_000 },
+    { id: 'seed-v2-trip-a-1', carId: 'car-a', route: STUTTGART_ROUTE, startOffset: 26 * 3600_000, duration: 12 * 60_000 },
+    { id: 'seed-v2-trip-a-2', carId: 'car-a', route: STUTTGART_ROUTE, startOffset: 50 * 3600_000, duration: 7  * 60_000 },
+    { id: 'seed-v2-trip-b-0', carId: 'car-b', route: FRANKFURT_ROUTE, startOffset: 3  * 3600_000, duration: 11 * 60_000 },
+    { id: 'seed-v2-trip-b-1', carId: 'car-b', route: FRANKFURT_ROUTE, startOffset: 28 * 3600_000, duration: 14 * 60_000 },
+    { id: 'seed-v2-trip-b-2', carId: 'car-b', route: FRANKFURT_ROUTE, startOffset: 52 * 3600_000, duration: 8  * 60_000 },
   ];
 
   for (const { id, carId, route, startOffset, duration } of fakeTrips) {
