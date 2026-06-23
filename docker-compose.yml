@@ -160,6 +160,5 @@ volumes:
   postgres_data:
   mosquitto_data:
   mosquitto_log:
-  redis_data:
   minio_data:
   redis_data:
