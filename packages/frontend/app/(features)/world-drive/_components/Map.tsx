@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, Fragment } from "react";
-import { MapContainer, TileLayer, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Polyline, ZoomControl, useMap } from "react-leaflet";
 import leaflet from "leaflet";
 
 
@@ -35,7 +35,7 @@ export interface VehicleTelemetry {
 export interface CarDisplayState {
   id:       string;
   color:    string;
-  position: VehicleTelemetry | null;
+  position: VehicleTelemetry | null; // null solange kein Signal da ist
   trail:    VehicleTelemetry[];
 }
 
@@ -64,7 +64,7 @@ function CarTrail({ color, trail }: { color: string; trail: VehicleTelemetry[] }
 
 /**
  * bewegt einen Auto-Marker flüssig auf der Karte
- * 
+ * position = letzter empfangener GPS-Datenpunkt
  */
 function CarMarker({
   id, color, position, onSelect,
@@ -87,11 +87,11 @@ function CarMarker({
     markerRef.current = marker;
     isFirst.current   = true;
     return () => { marker.remove(); };
-  }, [map]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [map]);
 
-  // Bei jeder neuen Position: Marker setzen — der Browser animiert via CSS Transition
+  // Bei jeder neuen Position: Marker setzen; der Browser animiert via CSS Transition
   useEffect(() => {
-    const marker = markerRef.current;
+    const marker = markerRef.current; // marker = Leaflet-Objekt auf der Karte, null bis der erste useEffect gelaufen ist
     if (!position || !marker) return;
     marker.setLatLng([position.lat, position.lng]);
     if (isFirst.current) {
@@ -121,7 +121,7 @@ export default function LeafletMap({ initialCenter, cars, followCarId, onCarSele
   const focusedCar = cars.find((c) => c.id === followCarId);
 
   return (
-    <MapContainer center={initialCenter} zoom={10} style={{ height: "100%", width: "100%" }}>
+    <MapContainer center={initialCenter} zoom={10} zoomControl={false} style={{ height: "100%", width: "100%" }}>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -133,6 +133,7 @@ export default function LeafletMap({ initialCenter, cars, followCarId, onCarSele
         </Fragment>
       ))}
       <CameraFollower position={focusedCar?.position ?? null} />
+      <ZoomControl position="bottomright" />
     </MapContainer>
   );
 }
