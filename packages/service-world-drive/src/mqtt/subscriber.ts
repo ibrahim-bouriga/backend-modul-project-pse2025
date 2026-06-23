@@ -11,10 +11,9 @@ export function connectMqtt(): void {
   const client = mqtt.connect(brokerUrl, { reconnectPeriod: 5000 });
 
   client.on('connect', () => {
-    console.log(`[MQTT] Connected to ${brokerUrl}`);
+    console.log(`[MQTT] Connected — subscribing to ${TOPIC_PATTERN}`);
     client.subscribe(TOPIC_PATTERN, (err) => {
       if (err) console.error('[MQTT] Subscribe error:', err.message);
-      else     console.log(`[MQTT] Subscribed to ${TOPIC_PATTERN}`);
     });
   });
 
@@ -31,7 +30,6 @@ export function connectMqtt(): void {
         typeof (data as Record<string, unknown>).lat !== 'number' ||
         typeof (data as Record<string, unknown>).lng !== 'number'
       ) {
-        console.warn(`[MQTT] Invalid payload from ${carId}`);
         return;
       }
 
@@ -56,6 +54,5 @@ export function connectMqtt(): void {
     }
   });
 
-  client.on('error',    (err) => console.error('[MQTT] Error:', err.message));
-  client.on('reconnect', ()   => console.log('[MQTT] Reconnecting...'));
+  client.on('error', (err) => console.error('[MQTT] Error:', err.message));
 }

@@ -57,13 +57,8 @@ export async function runSeed(prisma: PrismaClient): Promise<void> {
   for (const car of CARS) {
     await prisma.car.upsert({ where: { id: car.id }, update: {}, create: car });
   }
-  console.log('[Seed] Cars ready');
-
   const alreadySeeded = await prisma.trip.findFirst({ where: { id: { in: SEED_TRIP_IDS } } });
-  if (alreadySeeded) {
-    console.log('[Seed] Fake trips already seeded — skipping');
-    return;
-  }
+  if (alreadySeeded) return;
 
   const now = Date.now();
   const fakeTrips = [

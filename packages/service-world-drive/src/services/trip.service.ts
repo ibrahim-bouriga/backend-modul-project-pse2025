@@ -27,7 +27,6 @@ async function closeTrip(carId: string): Promise<void> {
     data:  { endedAt: new Date() },
   });
 
-  console.log(`[Trip] Closed trip ${state.activeTripId} for car ${carId}`);
   state.activeTripId    = null;
   state.inactivityTimer = null;
 }
@@ -42,7 +41,6 @@ export async function handleTelemetry(carId: string, telemetry: VehicleTelemetry
   if (!state.activeTripId && isMoving) {
     const trip = await prisma.trip.create({ data: { carId } });
     state.activeTripId = trip.id;
-    console.log(`[Trip] Started trip ${trip.id} for car ${carId}`);
   }
 
   if (state.activeTripId) {
