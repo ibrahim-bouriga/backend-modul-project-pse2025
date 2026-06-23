@@ -37,7 +37,7 @@ export default function MapFrame() {
     // Ermittlung der neuen Geschwindigkeit 
     let newSpeedKmh: number | null = null;
     if (hasPositionChanged && prevPosition) {
-      const rawKmh: number | null = data.speed != null ? data.speed * 3.6 : null; // m/s → km/h
+      const rawKmh: number | null = data.speed != null ? data.speed * 3.6 : null; // m/s → km/h (für DE)
       if (rawKmh != null && rawKmh >= 0) {
         //Das folgende wird auf basis von EMA(Exponential Moving Average) berechnet
         //Darin wird der neuere Mittelwert stärker gewichtet als ältere für das angleichen von Geschwindigkeitsverläufen

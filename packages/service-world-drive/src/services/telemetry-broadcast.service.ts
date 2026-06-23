@@ -1,10 +1,10 @@
 import type { Response } from 'express';
 import type { VehicleTelemetry } from '../types';
 
-// Last known telemetry per car
+// Zuletzt bekannte Telemetry Daten eines Autos
 const latest = new Map<string, VehicleTelemetry>();
 
-// SSE clients per car
+// SSE clients je Auto
 const sseClients = new Map<string, Set<Response>>();
 
 /**
