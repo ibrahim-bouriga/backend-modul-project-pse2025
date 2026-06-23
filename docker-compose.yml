@@ -5,14 +5,37 @@ services:
       context: ./packages/service-world-drive
       dockerfile: Dockerfile
     ports:
-      - "${WORLD_DRIVE_PORT:-4003}:4003"
+      - "${WORLD_DRIVE_PORT:-4005}:4005"
     environment:
-      PORT: "4003"
+      PORT: "4005"
       MQTT_BROKER_URL: "mqtt://broker.hivemq.com:1883"
-      DATABASE_URL: "postgresql://${WORLD_DRIVE_POSTGRES_USER:-postgres}:${WORLD_DRIVE_POSTGRES_PASSWORD:-changeme}@postgres-world-drive:5432/${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres-world-drive:5432/${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
       ENABLE_SIMULATOR: "true"
     depends_on:
       postgres-world-drive:
+        condition: service_healthy
+    restart: unless-stopped
+
+  car_models:
+    profiles: ["prod"]
+    build:
+      context: ./packages/car_models
+      dockerfile: Dockerfile
+    ports:
+      - "${CAR_MODELS_PORT:-4001}:4001"
+    environment:
+      PORT: "4001"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@car-models-postgres:5432/${CAR_MODELS_POSTGRES_DB:-pse2025}"
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: "9000"
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER:-minioadmin}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD:-minioadmin}"
+      MINIO_USE_SSL: "false"
+      MINIO_PUBLIC_URL: "http://localhost:${MINIO_PORT:-9000}"
+    depends_on:
+      car-models-postgres:
+        condition: service_healthy
+      minio:
         condition: service_healthy
     restart: unless-stopped
 
@@ -25,12 +48,19 @@ services:
         NEXT_PUBLIC_MQTT_BROKER_HOST: "${MQTT_BROKER_HOST:-localhost}"
         NEXT_PUBLIC_MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
         NEXT_PUBLIC_MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
+        NEXT_PUBLIC_BACKEND_URL: "http://localhost:${WEBSHOP_PORT:-4003}"
     image: nextjs-standalone-image
     container_name: nextjs-standalone-container
     environment:
       NODE_ENV: production
       PORT: "3000"
-      WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:4003"
+      CAR_MODELS_URL: "http://car_models:4001"
+      WEBSHOP_URL: "http://webshop:4003"
+      NGROK_API_URL: "http://ngrok:4040"
+      SERVICE_MYPSECARS_URL: "http://service-mypsecars:4004"
+      WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:${WORLD_DRIVE_PORT:-4005}"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     healthcheck:
@@ -39,6 +69,11 @@ services:
       timeout: 3s
       retries: 5
       start_period: 15s
+    depends_on:
+      - car_models
+      - service-mypsecars
+      - service-world-drive
+      - webshop
     restart: unless-stopped
 
   ngrok:
@@ -46,10 +81,28 @@ services:
     image: ngrok/ngrok:latest
     command: http frontend:3000
     environment:
-      NGROK_AUTHTOKEN: 2KDet8l4E1nLaKmDAep74ytUUH6_NFiErNCC8TRaKVZS9iip
+      NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    ports:
+      - "4040:4040"
     depends_on:
       frontend:
         condition: service_healthy
+    restart: unless-stopped
+
+  service-mypsecars:
+    profiles: ["prod"]
+    build:
+      context: ./packages/service-mypsecars
+      dockerfile: Dockerfile
+    ports:
+      - "${SERVICE_MYPSECARS_PORT:-4004}:4004"
+    environment:
+      PORT: "4004"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+    depends_on:
+      mosquitto:
+        condition: service_started
     restart: unless-stopped
 
   mosquitto:
@@ -68,15 +121,33 @@ services:
     profiles: ["dev", "prod"]
     image: postgres:16-alpine
     ports:
-      - "${WORLD_DRIVE_POSTGRES_PORT:-5433}:5432"
+      - "${WORLD_DRIVE_POSTGRES_PORT:-5434}:5432"
     environment:
       POSTGRES_DB: "${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
-      POSTGRES_USER: "${WORLD_DRIVE_POSTGRES_USER:-postgres}"
-      POSTGRES_PASSWORD: "${WORLD_DRIVE_POSTGRES_PASSWORD:-changeme}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme}"
     volumes:
       - postgres_world_drive_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${WORLD_DRIVE_POSTGRES_USER:-postgres} -d ${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  car-models-postgres:
+    profiles: ["dev", "prod"]
+    image: postgres:16-alpine
+    ports:
+      - "${CAR_MODELS_POSTGRES_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: "${CAR_MODELS_POSTGRES_DB:-pse2025}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${CAR_MODELS_POSTGRES_DB:-pse2025}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -101,8 +172,64 @@ services:
       retries: 5
     restart: unless-stopped
 
+  postgres-webshop:
+    profiles: ["dev", "prod"]
+    image: postgres:16-alpine
+    ports:
+      - "${WEBSHOP_POSTGRES_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: "${WEBSHOP_POSTGRES_DB:-webshopdb}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme}"
+    volumes:
+      - postgres_webshop_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${WEBSHOP_POSTGRES_DB:-webshopdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  webshop:
+    profiles: ["prod"]
+    build:
+      context: ./packages/webshop
+      dockerfile: Dockerfile
+    ports:
+      - "${WEBSHOP_PORT:-4003}:4003"
+    environment:
+      PORT: "4003"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres-webshop:5432/${WEBSHOP_POSTGRES_DB:-webshopdb}"
+      REDIS_URL: "redis://redis:6379"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+    depends_on:
+      postgres-webshop:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+      redis:
+        condition: service_started
+
+  redis:
+    profiles: ["dev", "prod"]
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
 volumes:
+  postgres_data:
   postgres_world_drive_data:
+  postgres_webshop_data:
   mosquitto_data:
   mosquitto_log:
   minio_data:
+  redis_data:
