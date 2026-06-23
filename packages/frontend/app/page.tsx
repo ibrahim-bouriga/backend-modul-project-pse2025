@@ -24,6 +24,12 @@ const featurePages: { href: string; title: string; description: string }[] = [
       "Customise every detail in our interactive 3D configurator — then hit Start and drive through a virtual world, steered by tilting your smartphone.",
   },
   {
+    href: "/driving-simulation",
+    title: "Driving Simulation",
+    description:
+      "Experience the thrill of driving in a virtual environment. Customize your ride and test it on various tracks.",
+  },
+  {
     href: "/world-drive",
     title: "World Drive",
     description:
@@ -52,7 +58,6 @@ const featurePages: { href: string; title: string; description: string }[] = [
 export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white font-sans">
-
       {/* ── Nav ─────────────────────────────────────────────────────────── */}
       <Header fixed />
 
@@ -69,7 +74,9 @@ export default function Home() {
             Study Project · Backend-Entwicklung
           </p>
           <h1 className="text-6xl font-black uppercase leading-none tracking-tight mb-6">
-            Drive the<br />Backend.
+            Drive the
+            <br />
+            Backend.
           </h1>
           <p className="text-lg text-zinc-300 max-w-xl leading-relaxed">
             MyPSECar is the full-stack showcase built by students mastering
@@ -98,7 +105,9 @@ export default function Home() {
               >
                 <h3 className="text-lg font-black uppercase tracking-wide mb-3 group-hover:text-white text-zinc-100">
                   {page.title}
-                  <span className="ml-2 text-zinc-500 group-hover:text-white">→</span>
+                  <span className="ml-2 text-zinc-500 group-hover:text-white">
+                    →
+                  </span>
                 </h3>
                 <p className="text-zinc-400 text-sm leading-relaxed">
                   {page.description}
@@ -111,7 +120,6 @@ export default function Home() {
 
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <Footer />
-
     </div>
   );
 }
