@@ -232,10 +232,11 @@ export interface CarViewer3DProps {
   wheelColor: string;
   brakeColor: string;
   tintOpacity: number;
-  isLoading?: boolean;
   cockpitMode?: boolean;
   /** Called when the cockpit button is clicked. */
   onCockpitButtonClick?: () => void;
+  /** Indicates if a popup is currently open. */
+  popupOpen?: boolean;
 }
 
 /**
@@ -247,8 +248,8 @@ export default function CarViewer3D({
   wheelColor,
   brakeColor,
   tintOpacity,
-  isLoading = false,
   cockpitMode = false,
+  popupOpen = false,
   onCockpitButtonClick = () => console.log('Cockpit button clicked'),
 }: CarViewer3DProps) {
   const controlsRef = useRef<any>(null);
@@ -280,7 +281,7 @@ export default function CarViewer3D({
         />
         
         {/* Environment for reflections, background, and ground projection */}
-        <Environment preset="forest" background backgroundBlurriness={0.2} ground={{ height: 15, radius: 80 }} />
+        <Environment preset="city"  background backgroundBlurriness={0.2} ground={{ height: 15, radius: 80 }} />
         
         {/* Ground */}
         <Ground />
@@ -291,7 +292,7 @@ export default function CarViewer3D({
         </Suspense>
         
         {/* Cockpit Button — only visible in cockpit mode */}
-        {cockpitMode && (
+        {cockpitMode && !popupOpen && (
           <CockpitButton
             position={COCKPIT_BUTTON_POSITION}
             label={COCKPIT_BUTTON_LABEL}

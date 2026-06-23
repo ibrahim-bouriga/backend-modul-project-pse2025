@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import CarViewer3D from "./_components/CarViewer3D";
 import ConfigPanel from "./_components/ConfigPanel";
 import {
@@ -33,7 +34,13 @@ const AVAILABLE_OPTIONS: ConfigurationOptions = {
   ],
   tints: [
     { id: "light", name: "Light Tint", hex: "#A6A6A6", opacity: 0.3, price: 0 },
-    { id: "dark", name: "Dark Tint", hex: "#000000", opacity: 0.7, price: 1000 },
+    {
+      id: "dark",
+      name: "Dark Tint",
+      hex: "#000000",
+      opacity: 0.7,
+      price: 1000,
+    },
   ],
   extras: [
     {
@@ -104,6 +111,7 @@ const BASE_CAR = {
 
 export default function CarConfiguratorPage() {
   const [cockpitMode, setCockpitMode] = useState(false);
+  const [drivingSimulatorPopup, setDrivingSimulatorPopup] = useState(false);
 
   const [configuration, setConfiguration] = useState<CarConfiguration>({
     ...BASE_CAR,
@@ -158,9 +166,43 @@ export default function CarConfiguratorPage() {
     setConfiguration((prev) => ({ ...prev, extras }));
   };
 
+  const openDrivingSimulatorPopup = () => {
+    setDrivingSimulatorPopup(true);
+  }
+
   return (
-    
     <div className="h-screen flex flex-col overflow-hidden">
+      {/* Popup for Driving Simulator */}
+      {drivingSimulatorPopup && (
+        <>
+          <div className="fixed inset-0 z-1 bg-black opacity-90" />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent">
+            <div className="bg-zinc-900 p-6 rounded-lg max-w-lg w-full">
+              <h2 className="text-xl font-bold mb-4 text-center">Driving Simulator</h2>
+              <p className="mb-4 text-center">
+                Do you wish to leave the car configuration? Click "Drive Me!" to start the driving simulator. You can always return to the configurator later.
+              </p>
+              <div className="flex justify-between">
+                <button
+                  onClick={() => setDrivingSimulatorPopup(false)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Close
+                </button>
+                <Link
+                  href="driving-simulation"
+                  onClick={() => {
+                    setDrivingSimulatorPopup(false);
+                  }}
+                  className="ml-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                >
+                  Drive Me!
+                </Link>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
       {/* Header */}
       <div className="shrink-0 flex flex-col md:flex-row justify-between items-center">
         <div className="max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
@@ -177,7 +219,8 @@ export default function CarConfiguratorPage() {
               additional options.
             </p>
             <p className="text-sm text-gray-400 italic">
-              Use your mouse or touch to rotate the car and see your changes in real time.
+              Use your mouse or touch to rotate the car and see your changes in
+              real time.
             </p>
           </div>
         </div>
@@ -204,8 +247,9 @@ export default function CarConfiguratorPage() {
                 wheelColor={configuration.wheelColor.hex}
                 brakeColor={configuration.brakeColor.hex}
                 tintOpacity={configuration.tint.opacity}
-                isLoading={false}
                 cockpitMode={cockpitMode}
+                popupOpen={drivingSimulatorPopup}
+                onCockpitButtonClick={openDrivingSimulatorPopup}
               />
             </div>
           </div>
