@@ -37,10 +37,15 @@ services:
       NODE_ENV: production
       PORT: "3000"
       CAR_MODELS_URL: "http://car_models:4001"
+      NGROK_API_URL: "http://ngrok:4040"
+      SERVICE_MYPSECARS_URL: "http://service-mypsecars:4004"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:
       - car_models
+      - service-mypsecars
     restart: unless-stopped
 
   ngrok:
@@ -49,8 +54,26 @@ services:
     command: http frontend:3000
     environment:
       NGROK_AUTHTOKEN: "${NGROK_AUTHTOKEN}"
+    ports:
+      - "4040:4040"
     depends_on:
       - frontend
+    restart: unless-stopped
+
+  service-mypsecars:
+    profiles: ["prod"]
+    build:
+      context: ./packages/service-mypsecars
+      dockerfile: Dockerfile
+    ports:
+      - "${SERVICE_MYPSECARS_PORT:-4004}:4004"
+    environment:
+      PORT: "4004"
+      MQTT_BROKER_HOST: mosquitto
+      MQTT_BROKER_PORT: "${MQTT_PORT:-1883}"
+    depends_on:
+      mosquitto:
+        condition: service_started
     restart: unless-stopped
 
   mosquitto:
