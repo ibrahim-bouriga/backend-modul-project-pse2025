@@ -1,3 +1,4 @@
+import {Suspense} from "react";
 import { CartProvider } from "../../_components/CartProvider";
 
 export default function MerchandiseLayout({
@@ -5,5 +6,9 @@ export default function MerchandiseLayout({
 }: {
     children: React.ReactNode;
 }) {
-    return <CartProvider>{children}</CartProvider>;
+    return (
+        <Suspense fallback={<div className="text-zinc-500">Loading merchandise…</div>}>
+            <CartProvider>{children}</CartProvider>
+        </Suspense>
+    );
 }
