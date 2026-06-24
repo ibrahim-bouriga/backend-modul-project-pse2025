@@ -1,8 +1,10 @@
 import "dotenv/config";
 import express, { Request, Response } from 'express';
 import cors from 'cors';
+import swaggerUi from 'swagger-ui-express';
 import { prisma } from './db.js';
 import { seed } from './seed.js';
+import { swaggerSpec } from './swagger/swagger.config.js';
 
 const app = express();
 const PORT = process.env.PORT || 4001;
@@ -11,6 +13,9 @@ const BUCKET = 'car-models';
 
 app.use(cors());
 app.use(express.json());
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/api/car-models', async (_req: Request, res: Response) => {
     const cars = await prisma.carModel.findMany({ orderBy: { year: 'desc' } });
