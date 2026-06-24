@@ -1,4 +1,21 @@
 services:
+  service-world-drive:
+    profiles: ["prod"]
+    build:
+      context: ./packages/service-world-drive
+      dockerfile: Dockerfile
+    ports:
+      - "${WORLD_DRIVE_PORT:-4005}:4005"
+    environment:
+      PORT: "4005"
+      MQTT_BROKER_URL: "mqtt://broker.hivemq.com:1883"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres-world-drive:5432/${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
+      ENABLE_SIMULATOR: "true"
+    depends_on:
+      postgres-world-drive:
+        condition: service_healthy
+    restart: unless-stopped
+
   car_models:
     profiles: ["prod"]
     build:
@@ -41,13 +58,21 @@ services:
       WEBSHOP_URL: "http://webshop:4003"
       NGROK_API_URL: "http://ngrok:4040"
       SERVICE_MYPSECARS_URL: "http://service-mypsecars:4004"
+      WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:4005"
       MQTT_BROKER_HOST: mosquitto
       MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health',(r)=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))\""]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
     depends_on:
       - car_models
       - service-mypsecars
+      - service-world-drive
       - webshop
     restart: unless-stopped
 
@@ -60,7 +85,8 @@ services:
     ports:
       - "4040:4040"
     depends_on:
-      - frontend
+      frontend:
+        condition: service_healthy
     restart: unless-stopped
 
   service-mypsecars:
@@ -89,6 +115,24 @@ services:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
+    restart: unless-stopped
+
+  postgres-world-drive:
+    profiles: ["dev", "prod"]
+    image: postgres:16-alpine
+    ports:
+      - "${WORLD_DRIVE_POSTGRES_PORT:-5434}:5432"
+    environment:
+      POSTGRES_DB: "${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-changeme}"
+    volumes:
+      - postgres_world_drive_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   car-models-postgres:
@@ -183,6 +227,7 @@ services:
 
 volumes:
   postgres_data:
+  postgres_world_drive_data:
   postgres_webshop_data:
   mosquitto_data:
   mosquitto_log:

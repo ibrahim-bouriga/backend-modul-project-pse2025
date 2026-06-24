@@ -11,11 +11,13 @@
     "dev:car_models": "npm run dev --workspace=packages/car_models",
     "dev:service-mypsecars": "npm run dev --workspace=packages/service-mypsecars",
     "dev:webshop": "npm run dev --workspace=packages/webshop",
-    "dev": "npm run dev:car_models & npm run dev:frontend & npm run dev:service-mypsecars & npm run dev:webshop",    
+    "dev:world-drive": "npm run dev --workspace=packages/service-world-drive",
+    "dev": "npm run dev:car_models & npm run dev:frontend & npm run dev:service-mypsecars & npm run dev:webshop & npm run dev:world-drive",
     "build:frontend": "npm run build --workspace=packages/frontend",
     "build:car_models": "npm run build --workspace=packages/car_models",
     "build:mypsecars": "npm run build --workspace=packages/mypsecars",
-    "build:webshop": "npm run build --workspace=packages/webshop"
+    "build:webshop": "npm run build --workspace=packages/webshop",
+    "build:world-drive": "npm run build --workspace=packages/service-world-drive"
   },
   "devDependencies": {
     "typescript": "^5.3.3"
