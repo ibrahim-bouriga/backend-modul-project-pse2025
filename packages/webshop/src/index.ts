@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import swaggerUi from 'swagger-ui-express';
 import { sessionMiddleware } from './middleware/session.js';
 import productsRouter from './routes/products.js';
 import cartRouter from './routes/cart.js';
@@ -10,6 +11,7 @@ import categoriesRouter from './routes/categories.js';
 import { startCartCleanupJob } from './jobs/cleanupExpiredCarts.js';
 import { connectRedis } from './redis.js';
 import { seed } from './seed.js';
+import { swaggerSpec } from './swagger/swagger.config.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4003;
@@ -21,6 +23,9 @@ app.use(express.json());
 app.use(cookieParser());
 //Middelware
 app.use(sessionMiddleware);
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // API Routes
 app.use('/api/products', productsRouter);
