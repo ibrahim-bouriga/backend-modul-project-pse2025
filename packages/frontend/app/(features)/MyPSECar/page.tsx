@@ -5,8 +5,9 @@ import PhoneQRCode from "./_components/PhoneQRCode";
 import LogoutButton from "./_components/LogoutButton";
 import MyCarCard from "./_components/MyCarCard";
 import { getUser, getCarModel } from "./_lib/data";
+import { Suspense } from "react";
 
-export default async function MyPSECarPage() {
+async function MyPSECarContent() {
   const cookieStore = await cookies();
   const username = cookieStore.get("session")?.value ?? null;
 
@@ -75,5 +76,13 @@ export default async function MyPSECarPage() {
         <TelemetryPanel />
       </div>
     </div>
+  );
+}
+
+export default function MyPSECarPage() {
+  return (
+    <Suspense fallback={<div className="text-zinc-500">Loading MyPSECar…</div>}>
+      <MyPSECarContent />
+    </Suspense>
   );
 }

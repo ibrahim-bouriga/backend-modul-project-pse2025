@@ -1,7 +1,5 @@
 import { Agent } from 'undici';
 
-export const dynamic = 'force-dynamic';
-
 const SVC = process.env.WORLD_DRIVE_SERVICE_URL ?? 'http://localhost:4003';
 
 // SSE streams never end — disable undici's default 300s body timeout to prevent premature termination

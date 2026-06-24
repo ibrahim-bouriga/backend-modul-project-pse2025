@@ -1,6 +1,5 @@
+import { Suspense } from "react";
 import CarGrid from "./_components/CarGrid";
-
-export const dynamic = "force-dynamic";
 
 export default function CarOverviewPage() {
   return (
@@ -22,7 +21,9 @@ export default function CarOverviewPage() {
       </div>
 
       {/* ── Grid ─────────────────────────────────────────────────────────── */}
-      <CarGrid />
+      <Suspense fallback={<div className="text-zinc-500">Loading cars…</div>}>
+        <CarGrid />
+      </Suspense>
 
     </div>
   );
