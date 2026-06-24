@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { HeroConfig } from "../../_types/features";
 
 /**
@@ -11,14 +12,21 @@ export function HeroSection({
   description,
 }: HeroConfig) {
   return (
-    <section
-      className="relative w-full h-screen bg-center bg-cover flex flex-col justify-end pt-20"
-      style={{ backgroundImage: `url(${image})` }}
-    >
+    <section className="relative w-full h-screen flex flex-col justify-end pt-20">
+      {/* Optimized background image */}
+      <Image
+        src={image}
+        alt="Hero background"
+        fill
+        priority
+        className="object-cover"
+        quality={90}
+      />
+      
       {/* Dark gradient overlay */}
-      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-black/10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/10 z-10" />
 
-      <div className="relative z-10 px-8 pb-20 max-w-4xl">
+      <div className="relative z-20 px-8 pb-20 max-w-4xl">
         <p className="text-sm font-semibold tracking-[0.3em] uppercase text-zinc-300 mb-4">
           {subtitle}
         </p>
