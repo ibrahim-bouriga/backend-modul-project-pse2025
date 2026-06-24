@@ -67,7 +67,7 @@ client.on('message', (topic, message) => {
 Use the following naming scheme to avoid conflicts between teams:
 
 ```
-<project>/<team>/<function>
+{app}/{feature}/{daten}
 ```
 
 **Examples:**
