@@ -44,6 +44,10 @@ MINIO_USE_SSL="${MINIO_USE_SSL:-false}"
 
 SERVICE_MYPSECARS_PORT="${SERVICE_MYPSECARS_PORT:-4004}"
 
+WORLD_DRIVE_POSTGRES_DB="${WORLD_DRIVE_POSTGRES_DB:-worlddrivedb}"
+WORLD_DRIVE_POSTGRES_PORT="${WORLD_DRIVE_POSTGRES_PORT:-5434}"
+WORLD_DRIVE_PORT="${WORLD_DRIVE_PORT:-4005}"
+
 # ── car_models ───────────────────────────────────────────────────────────────
 cat > packages/car_models/.env <<EOF
 PORT=${CAR_MODELS_PORT}
@@ -83,6 +87,16 @@ MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
 MINIO_USE_SSL=${MINIO_USE_SSL}
 EOF
 echo "Generated packages/webshop/.env"
+
+# ── service-world-drive ──────────────────────────────────────────────────────
+cat > packages/service-world-drive/.env <<EOF
+PORT=${WORLD_DRIVE_PORT}
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${WORLD_DRIVE_POSTGRES_PORT}/${WORLD_DRIVE_POSTGRES_DB}
+MQTT_BROKER_HOST=localhost
+MQTT_BROKER_PORT=${MQTT_PORT}
+ENABLE_SIMULATOR=true
+EOF
+echo "Generated packages/service-world-drive/.env"
 
 echo ""
 echo "Done. Run this script again whenever you change .env."
