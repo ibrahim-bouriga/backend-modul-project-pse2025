@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera, Environment, useFBX, useGLTF, Html } from '@react-three/drei';
-import { Suspense, useEffect, useRef, MutableRefObject } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, MutableRefObject } from 'react';
 import * as THREE from 'three';
 
 interface CarModelProps {
@@ -53,7 +53,16 @@ const setWindowTint = (opacity: number, gltf: any) => {
  * Lamborghini Revuelto FBX model
  */
 function CarModel({ bodyColor, wheelColor, brakeColor, tintOpacity }: CarModelProps) {
-  const gltf = useGLTF('/free_lamborghini_revuelto/scene.gltf');
+  const MODEL_PATH = '/free_lamborghini_revuelto/scene.gltf';
+  const gltf = useGLTF(MODEL_PATH);
+
+  // When the Canvas unmounts (Activity hiding the page), clear drei's global
+  // GLTF cache so all GPU-side geometries, materials and textures are freed.
+  useEffect(() => {
+    return () => {
+      useGLTF.clear(MODEL_PATH);
+    };
+  }, []);
 
   useEffect(() => {
     gltf.scene.traverse((child) => {
@@ -105,7 +114,7 @@ function CarModel({ bodyColor, wheelColor, brakeColor, tintOpacity }: CarModelPr
         }
 
         // Log mesh and material names to inspect the model structure
-        console.log('Mesh:', child.name, '| Materials:', materials.map(m => m.name));
+        // console.log('Mesh:', child.name, '| Materials:', materials.map(m => m.name));
       }
     });
   }, [gltf]);
@@ -126,13 +135,13 @@ function CarModel({ bodyColor, wheelColor, brakeColor, tintOpacity }: CarModelPr
     setWindowTint(tintOpacity, gltf);
   }, [gltf, tintOpacity]);
 
-  return <primitive object={gltf.scene} scale={2} position={[0, -0.8, 0]}/>;
+  return <primitive object={gltf.scene} scale={2} position={[0, 0, 0]}/>;
 }
 
-const NORMAL_CAMERA_POSITION = new THREE.Vector3(5, 3, 5);
+const NORMAL_CAMERA_POSITION = new THREE.Vector3(7, 3, 6);
 const NORMAL_CAMERA_TARGET = new THREE.Vector3(0, 0, 0);
-const COCKPIT_CAMERA_POSITION = new THREE.Vector3(0.77, 0.8, 0.2);
-const COCKPIT_CAMERA_TARGET = new THREE.Vector3(1, 0.4, 5);
+const COCKPIT_CAMERA_POSITION = new THREE.Vector3(0.77, 1.7, 0.3);
+const COCKPIT_CAMERA_TARGET = new THREE.Vector3(1, 0.8, 5);
 
 function CameraController({
   cockpitMode,
@@ -211,22 +220,6 @@ function LoadingFallback() {
   );
 }
 
-/**
- * Ground plane for the scene
- */
-function Ground() {
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.8, 0]} receiveShadow>
-      <planeGeometry args={[200, 200]} />
-      <meshStandardMaterial 
-        color="#222222"
-        metalness={0.2}
-        roughness={0.95}
-      />
-    </mesh>
-  );
-}
-
 export interface CarViewer3DProps {
   bodyColor: string;
   wheelColor: string;
@@ -254,14 +247,23 @@ export default function CarViewer3D({
 }: CarViewer3DProps) {
   const controlsRef = useRef<any>(null);
 
-  const COCKPIT_BUTTON_POSITION: [number, number, number] = [0.78, 0.87, 1];
+  // Unmount the Canvas when Activity (cacheComponents) hides this page so the
+  // WebGL context is properly disposed. The cleanup runs on hide and the effect
+  // re-runs on show, recreating the context.
+  const [canvasVisible, setCanvasVisible] = useState(true);
+  useLayoutEffect(() => {
+    setCanvasVisible(true);
+    return () => setCanvasVisible(false);
+  }, []);
+
+  const COCKPIT_BUTTON_POSITION: [number, number, number] = [0.78, 1.67, 1];
   const COCKPIT_BUTTON_LABEL = 'Start Driving Simulator!';
 
   return (
     <div className="w-full h-full bg-zinc-900 rounded-lg overflow-hidden">
-      <Canvas shadows>
+      {canvasVisible && <Canvas shadows>
         {/* Camera */}
-        <PerspectiveCamera makeDefault position={[5, 3, 5]} fov={50} />
+        <PerspectiveCamera makeDefault position={NORMAL_CAMERA_POSITION} fov={50} />
         
         {/* Lighting */}
         <ambientLight intensity={0.4} />
@@ -281,10 +283,10 @@ export default function CarViewer3D({
         />
         
         {/* Environment for reflections, background, and ground projection */}
-        <Environment preset="city"  background backgroundBlurriness={0.2} ground={{ height: 15, radius: 80 }} />
+        <Environment preset="sunset"  background ground={{ height: 5, radius: 50 }} />
         
         {/* Ground */}
-        <Ground />
+        {/* <Ground /> */}
         
         {/* Car Model */}
         <Suspense fallback={<LoadingFallback />}>
@@ -314,7 +316,7 @@ export default function CarViewer3D({
           maxPolarAngle={Math.PI / 2}
           target={[0, 0, 0]}
         />
-      </Canvas>
+      </Canvas>}
       
       {/* WebGL Not Supported Message */}
       <noscript>

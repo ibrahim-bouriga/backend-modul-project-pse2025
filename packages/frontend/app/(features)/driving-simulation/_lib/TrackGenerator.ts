@@ -1,5 +1,7 @@
 import * as THREE from "three";
 
+import type { EnvironmentParts } from "./GltfEnvironmentLoader";
+
 export interface SpawnPoint {
   position: THREE.Vector3;
   yaw: number;
@@ -20,7 +22,7 @@ const EL_W      = 0.08;          // Randlinien Breite (weiß)
 // ── Chunk-System ───────────────────────────────────────────────
 const N_CHUNKS  = 90;            // Chunks insgesamt (geschlossene Schleife)
 const SPR       = 6;             // Querschnitte pro Chunk-Ribbon
-const AHEAD     = 12;            // Chunks voraus sichtbar  (~60 m)
+const AHEAD     = 20;            // Chunks voraus sichtbar  (~60 m)
 const BEHIND    = 5;             // Chunks hinter dem Spieler
 
 // ── Geteilte Materialien ───────────────────────────────────────
@@ -29,9 +31,11 @@ const M_CURB = new THREE.MeshLambertMaterial({ color: 0x555555 });
 const M_SW   = new THREE.MeshLambertMaterial({ color: 0xbbbbbb });
 const M_CL   = new THREE.MeshLambertMaterial({ color: 0xffdd00 }); // gelbe Mittellinie
 const M_EL   = new THREE.MeshLambertMaterial({ color: 0xdddddd }); // weiße Randlinie
-const M_TREE = new THREE.MeshLambertMaterial({ color: 0x2d5016 });
-const M_TRNK = new THREE.MeshLambertMaterial({ color: 0x5c3d1e });
 const M_BLDG = new THREE.MeshLambertMaterial({ color: 0x6d7f8a });
+
+// ── GLTF-Umgebungs-Skala ──────────────────────────────────────
+const GLTF_TREE_SCALE = 1.0;   // Basisskala für GLTF-Bäume  (ggf. anpassen)
+const GLTF_ROCK_SCALE = 1.0;   // Basisskala für GLTF-Felsen (ggf. anpassen)
 
 const _UP = new THREE.Vector3(0, 1, 0);
 
@@ -86,6 +90,7 @@ export class TrackGenerator {
   private scene: THREE.Scene;
   private rng: () => number;
   private nCP: number;
+  private envParts: EnvironmentParts | null = null;
   private curve!: THREE.CatmullRomCurve3;
   private midPts: THREE.Vector3[] = [];   // Chunk-Mittelpunkte für Nearest-Suche
   private chunks: THREE.Group[] = [];
@@ -94,11 +99,12 @@ export class TrackGenerator {
 
   constructor(
     scene: THREE.Scene,
-    cfg: { seed?: number; controlPointCount?: number } = {}
+    cfg: { seed?: number; controlPointCount?: number; envParts?: EnvironmentParts } = {}
   ) {
     this.scene = scene;
     this.rng = lcg(cfg.seed ?? 42);
     this.nCP = cfg.controlPointCount ?? 14;
+    this.envParts = cfg.envParts ?? null;
   }
 
   generate(): SpawnPoint {
@@ -215,55 +221,46 @@ export class TrackGenerator {
       addMesh(ribbon(slices, -HALF, -(HALF - EL_W), MY), M_EL);
       addMesh(ribbon(slices, HALF - EL_W, HALF, MY), M_EL);
 
-      // Bäume entlang Gehweg
-      const treeCount = 3 + Math.floor(this.rng() * 3);
-      for (let k = 0; k < treeCount; k++) {
-        const frac = t0 + (t1 - t0) * this.rng();
-        const sl = slice(this.curve, frac);
-        const side = this.rng() > 0.5 ? 1 : -1;
-        // Bäume auf/hinter dem Gehweg
-        const dist = HALF + CURB + SW * (0.4 + this.rng() * 0.6) + this.rng() * 3;
-        const scale = 0.6 + this.rng() * 1.1;
-        const px = sl.c.x + sl.b.x * side * dist;
-        const pz = sl.c.z + sl.b.z * side * dist;
+      // Bäume & Felsen aus GLTF entlang Gehweg
+      if (this.envParts && this.envParts.trees.length > 0) {
+        const { trees, rocks } = this.envParts;
+        const treeCount = 5;
+        for (let k = 0; k < treeCount; k++) {
+          const frac = t0 + (t1 - t0) * this.rng();
+          const sl = slice(this.curve, frac);
+          const side = this.rng() > 0.5 ? 1 : -1;
+          const dist = HALF + CURB + SW * (1 + this.rng() * 5) + this.rng() * 5;
+          const px = sl.c.x + sl.b.x * side * dist;
+          const pz = sl.c.z + sl.b.z * side * dist;
 
-        const cg = new THREE.ConeGeometry(scale * 0.95, scale * 2.3, 6);
-        const tg = new THREE.CylinderGeometry(0.1 * scale, 0.15 * scale, scale * 0.7, 5);
-        this.geos.push(cg, tg);
+          const template = trees[Math.floor(this.rng() * trees.length)];
+          const obj = template.clone(true);
+          obj.position.set(px, 0, pz);
+          obj.scale.setScalar(GLTF_TREE_SCALE * (0.7 + this.rng() * 0.6));
+          obj.traverse((c) => {
+            if (c instanceof THREE.Mesh) { c.castShadow = true; c.receiveShadow = true; }
+          });
+          group.add(obj);
+        }
 
-        const crown = new THREE.Mesh(cg, M_TREE);
-        crown.position.set(px, SY + scale * 1.15 + scale * 0.35, pz);
-        crown.rotation.y = this.rng() * Math.PI * 2;
-        crown.castShadow = true;
-        group.add(crown);
+        // Gelegentliche Felsen hinter dem Gehweg
+        if (rocks.length > 0 && this.rng() < 0.5) {
+          const frac = t0 + (t1 - t0) * this.rng();
+          const sl = slice(this.curve, frac);
+          const side = this.rng() > 0.5 ? 1 : -1;
+          const dist = HALF + CURB + SW + 0.5 + this.rng() * 4;
+          const px = sl.c.x + sl.b.x * side * dist;
+          const pz = sl.c.z + sl.b.z * side * dist;
 
-        const trunk = new THREE.Mesh(tg, M_TRNK);
-        trunk.position.set(px, SY + scale * 0.35, pz);
-        trunk.castShadow = true;
-        group.add(trunk);
-      }
-
-      // Gebäude (ca. 45 % der Chunks)
-      if (this.rng() < 0.45) {
-        const frac = t0 + (t1 - t0) * (0.3 + this.rng() * 0.4);
-        const sl = slice(this.curve, frac);
-        const side = this.rng() > 0.5 ? 1 : -1;
-        const dist = HALF + CURB + SW + 1.5 + this.rng() * 18;
-        const w = 3 + this.rng() * 6;
-        const h = 4 + this.rng() * 20;
-        const d = 3 + this.rng() * 6;
-        const bg = new THREE.BoxGeometry(w, h, d);
-        this.geos.push(bg);
-        const bldg = new THREE.Mesh(bg, M_BLDG);
-        bldg.position.set(
-          sl.c.x + sl.b.x * side * dist,
-          h / 2,
-          sl.c.z + sl.b.z * side * dist
-        );
-        bldg.rotation.y = this.rng() * Math.PI * 2;
-        bldg.castShadow = true;
-        bldg.receiveShadow = true;
-        group.add(bldg);
+          const template = rocks[Math.floor(this.rng() * rocks.length)];
+          const obj = template.clone(true);
+          obj.position.set(px, 0, pz);
+          obj.scale.setScalar(GLTF_ROCK_SCALE * (0.5 + this.rng() * 1.0));
+          obj.traverse((c) => {
+            if (c instanceof THREE.Mesh) { c.castShadow = true; c.receiveShadow = true; }
+          });
+          group.add(obj);
+        }
       }
 
       this.scene.add(group);

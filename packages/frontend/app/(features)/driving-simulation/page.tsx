@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useLayoutEffect, useState } from "react";
 
 // Three.js läuft ausschließlich im Browser – ssr: false verhindert,
 // dass Next.js versucht, diese Komponente serverseitig zu rendern.
@@ -24,5 +25,14 @@ const World = dynamic(() => import("./_components/World"), {
 });
 
 export default function DrivingSimulationPage() {
-  return <World />;
+  // Unmount the Canvas when Activity (cacheComponents) hides this page so the
+    // WebGL context is properly disposed. The cleanup runs on hide and the effect
+    // re-runs on show, recreating the context.
+    const [worldVisible, setWorldVisible] = useState(true);
+    useLayoutEffect(() => {
+      setWorldVisible(true);
+      return () => setWorldVisible(false);
+    }, []);
+  
+  return worldVisible ? <World /> : null;
 }

@@ -1,5 +1,6 @@
 const nextConfig = {
   output: "standalone",
+  cacheComponents: true,
   images: {
     remotePatterns: [
       {

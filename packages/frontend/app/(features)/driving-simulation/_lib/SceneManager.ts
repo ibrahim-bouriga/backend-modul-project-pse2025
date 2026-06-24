@@ -62,6 +62,34 @@ export class SceneManager {
 
   dispose(): void {
     this.resizeObserver.disconnect();
+
+    // Traverse the entire scene and free every GPU resource that was uploaded:
+    // geometries (vertex/index buffers), materials (shader programs), and any
+    // textures referenced by those materials. This covers the GLTF interior,
+    // track meshes, mirror materials, and everything else in the scene graph.
+    this.scene.traverse((object) => {
+      if (
+        object instanceof THREE.Mesh ||
+        object instanceof THREE.Line ||
+        object instanceof THREE.Points
+      ) {
+        object.geometry.dispose();
+        const mats = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        mats.forEach((mat: THREE.Material) => {
+          // Dispose textures embedded in the material (maps, env maps, etc.)
+          Object.values(mat).forEach((value) => {
+            if (value instanceof THREE.Texture) value.dispose();
+          });
+          mat.dispose();
+        });
+      }
+    });
+
     this.renderer.dispose();
+    // Release the WebGL context back to the browser so GPU memory is reclaimed
+    // immediately rather than waiting for the GC.
+    this.renderer.forceContextLoss();
   }
 }

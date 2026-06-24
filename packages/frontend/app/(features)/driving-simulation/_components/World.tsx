@@ -7,8 +7,10 @@ import { buildInterior } from "../_lib/InteriorBuilder";
 import { loadGltfInterior } from "../_lib/GltfInteriorLoader";
 import { CarController } from "../_lib/CarController";
 import { TrackGenerator } from "../_lib/TrackGenerator";
+import { loadGltfEnvironment } from "../_lib/GltfEnvironmentLoader";
 import { MQTTController } from "../_lib/MQTTController";
 import type { CarInput } from "../_lib/types";
+import Link from "next/link";
 
 export const USE_GLTF_INTERIOR = true; // true = GLTF-Cockpit, false = buildInterior()
 
@@ -176,7 +178,8 @@ export default function World() {
       });
 
       // --- Strecke ---
-      const trackGen = new TrackGenerator(sceneManager.scene, { seed: 42 });
+      const envParts = await loadGltfEnvironment();
+      const trackGen = new TrackGenerator(sceneManager.scene, { seed: 42, envParts: envParts ?? undefined });
       const spawn = trackGen.generate();
       carController.setSpawn(spawn.position, spawn.yaw);
 
@@ -291,6 +294,11 @@ export default function World() {
         style={{ display: "block", width: "100%", height: "100%" }}
       />
 
+      {/* Go to Configurator */}
+      <div className="absolute text-lg px-4 py-2 rounded-lg top-4 left-4 bg-zinc-800/60 hover:text-white hover:bg-zinc-700/60 ">
+        <Link href="/car-configurator">Go to Car Configurator</Link>
+      </div>  
+
       {/* Tachometer */}
       <div
         style={{
@@ -346,7 +354,9 @@ export default function World() {
           />
           {statusDisplay.text}
         </div>
-        <canvas ref={qrRef} style={{ display: "block" }} />
+        <div className="flex justify-center items-center">
+        <canvas ref={qrRef} style={{ display: "flex" }} />
+        </div>
         {mqttConnected && (
           <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4 }}>
             Smartphone scannen
