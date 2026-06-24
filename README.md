@@ -19,14 +19,16 @@ Builds and runs every service in containers. Use this to verify the production s
 
 ## Architecture
 
-This monorepo contains one shared frontend and multiple microservices. 
+This monorepo contains one shared frontend and multiple microservices.
 
 ```
 packages/
-├── frontend/          # Single shared frontend (served to the browser)
-├── backend/           # Template microservice — copy this to get started
-├── service-a/         # Example: your team's microservice
-└── service-b/         # Example: another team's microservice
+├── frontend/              # Next.js frontend (served to the browser, port 3000)
+├── car_models/            # Car catalogue API (port 4001)
+├── webshop/               # Webshop API with cart, orders, and Redis sessions (port 4003)
+├── service-mypsecars/     # MyPSECars service — MQTT-driven car telemetry (port 4004)
+├── service-world-drive/   # World Drive service — leaderboard and driving simulation (port 4005)
+└── backend/               # Template microservice — copy this to get started
 ```
 
 Each microservice is an independent Express server with its own port, database connection, and MQTT client. They all share the same Docker Compose setup.
@@ -35,7 +37,7 @@ Each microservice is an independent Express server with its own port, database c
 
 1. Copy `packages/backend` to `packages/<your-service-name>`
 2. Update `name` in `packages/<your-service-name>/package.json`
-3. Add a new service entry in `docker-compose.yml` (use the `backend` service as reference)
+3. Add a new service entry in `docker-compose.yml` (use an existing service as reference)
 4. Pick a free port and set it in `.env`
 
 ## Project structure
@@ -43,46 +45,101 @@ Each microservice is an independent Express server with its own port, database c
 ```
 .
 ├── packages/
-│   ├── frontend/                  # Browser frontend (http-server, port 3000)
-│   │   ├── public/                # Static files served to the browser
-│   │   │   ├── index.html
-│   │   │   ├── styles.css
-│   │   │   └── app.js
-│   │   ├── src/                   # TypeScript source
+│   ├── frontend/                      # Next.js frontend (port 3000)
+│   │   ├── app/                       # Next.js App Router pages and layouts
+│   │   │   ├── (features)/            # Feature routes (car-configurator, webshop, world-drive, …)
+│   │   │   ├── (mobile)/              # Mobile-specific routes
+│   │   │   ├── _components/           # Shared React components
+│   │   │   ├── _lib/                  # API clients, MQTT helpers, constants
+│   │   │   ├── _types/                # Shared TypeScript types
+│   │   │   └── api/                   # Next.js API route handlers
 │   │   ├── Dockerfile
 │   │   └── package.json
-│   └── backend/                   # Template microservice (Express, port 4000)
-│       ├── prisma/
-│       │   ├── schema.prisma      # Database model definitions
-│       │   └── migrations/        # Auto-generated migration files
+│   ├── car_models/                    # Car catalogue API (Express, port 4001)
+│   │   ├── prisma/
+│   │   │   └── schema.prisma          # Car model definitions
+│   │   ├── src/
+│   │   │   ├── index.ts               # Express server entry point
+│   │   │   ├── db.ts                  # Prisma client singleton
+│   │   │   ├── minio.ts               # MinIO client (image storage)
+│   │   │   ├── mqtt.ts                # MQTT client
+│   │   │   ├── seed.ts                # Database seed script
+│   │   │   └── swagger/               # OpenAPI/Swagger docs
+│   │   ├── prisma.config.ts
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── webshop/                       # Webshop API (Express, port 4003)
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma          # Webshop model definitions
+│   │   │   ├── seed.ts
+│   │   │   └── migrations/
+│   │   ├── src/
+│   │   │   ├── index.ts               # Express server entry point
+│   │   │   ├── db.ts                  # Prisma client singleton
+│   │   │   ├── minio.ts               # MinIO client
+│   │   │   ├── mqtt.ts                # MQTT client
+│   │   │   ├── redis.ts               # Redis client (sessions / cache)
+│   │   │   ├── seed.ts
+│   │   │   ├── jobs/                  # Background jobs
+│   │   │   ├── middleware/            # Express middleware
+│   │   │   ├── routes/                # Route handlers
+│   │   │   └── swagger/               # OpenAPI/Swagger docs
+│   │   ├── prisma.config.ts
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── service-mypsecars/             # MyPSECars service (Express, port 4004)
+│   │   ├── src/
+│   │   │   ├── index.ts               # Express server entry point
+│   │   │   ├── mqtt/                  # MQTT subscriptions and handlers
+│   │   │   ├── routes/                # Route handlers
+│   │   │   ├── services/              # Business logic
+│   │   │   └── swagger/               # OpenAPI/Swagger docs
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   ├── service-world-drive/           # World Drive service (Express, port 4005)
+│   │   ├── prisma/
+│   │   │   └── schema.prisma          # Leaderboard / session model definitions
+│   │   ├── scripts/
+│   │   │   ├── seed.ts                # Database seed script
+│   │   │   └── simulate.ts            # Driving simulation script
+│   │   ├── src/
+│   │   │   ├── index.ts               # Express server entry point
+│   │   │   ├── db.ts                  # Prisma client singleton
+│   │   │   ├── types.ts               # Shared TypeScript types
+│   │   │   ├── mqtt/                  # MQTT subscriptions and handlers
+│   │   │   ├── routes/                # Route handlers
+│   │   │   └── services/              # Business logic
+│   │   ├── prisma.config.ts
+│   │   ├── Dockerfile
+│   │   └── package.json
+│   └── backend/                       # Template microservice — copy this to get started
 │       ├── src/
-│       │   ├── index.ts           # Express server entry point — add routes here
-│       │   ├── db.ts              # Prisma client singleton — import this to query the DB
-│       │   ├── mqtt.ts            # MQTT broker config — import this to publish/subscribe
-│       │   └── minio.ts           # MinIO client singleton — import this to upload/download files
-│       ├── prisma.config.ts       # Prisma 7 datasource config (reads DATABASE_URL from env)
+│       │   └── index.ts
 │       ├── Dockerfile
-│       ├── tsconfig.json
 │       └── package.json
 ├── mosquitto/
-│   └── mosquitto.conf             # Mosquitto broker config
+│   └── mosquitto.conf                 # Mosquitto broker config
 ├── docs/
-│   ├── database.md                # How to define models and run migrations (Prisma)
-│   ├── docker.md                  # Docker profiles, commands, and how to run the stack
-│   └── mqtt.md                    # MQTT setup, how to publish/subscribe, topic conventions
-├── docker-compose.yml             # Defines all services (use --profile dev or --profile prod)
-└── .env.example                   # Copy to .env and fill in your values
+│   ├── database.md                    # How to define models and run migrations (Prisma)
+│   ├── docker.md                      # Docker profiles, commands, and how to run the stack
+│   └── mqtt.md                        # MQTT setup, how to publish/subscribe, topic conventions
+├── scripts/
+│   ├── generate-env.sh                # Generates per-package .env files from the root .env
+│   └── setup-dev.sh                   # First-time dev setup (deps, envs, DB migrations)
+├── docker-compose.yml                 # Defines all services (use --profile dev or --profile prod)
+└── .env.example                       # Copy to .env and fill in your values
 ```
 
 ## Infrastructure
 
-| Service                    | What it is              | Port(s)                      |
-|----------------------------|-------------------------|------------------------------|
-| PostgreSQL (car_models)    | Car catalogue database  | 5432                         |
-| PostgreSQL (webshop)       | Webshop database        | 5433                         |
-| Redis                      | Session / cache store   | 6379                         |
-| Mosquitto                  | MQTT broker             | 1883 (TCP), 9001 (WebSocket) |
-| MinIO                      | Object / file storage   | 9000 (API), 9002 (Web UI)    |
+| Service                       | What it is              | Port(s)                      |
+|-------------------------------|-------------------------|------------------------------|
+| PostgreSQL (car_models)       | Car catalogue database  | 5432                         |
+| PostgreSQL (webshop)          | Webshop database        | 5433                         |
+| PostgreSQL (service-world-drive) | World Drive database | 5434                         |
+| Redis                         | Session / cache store   | 6379                         |
+| Mosquitto                     | MQTT broker             | 1883 (TCP), 9001 (WebSocket) |
+| MinIO                         | Object / file storage   | 9000 (API), 9002 (Web UI)    |
 
 ## Local development
 
@@ -118,21 +175,23 @@ npm run dev          # start all services in parallel
 Or individually:
 
 ```sh
-npm run dev:car_models        # Car catalogue API  — http://localhost:4001
-npm run dev:webshop           # Webshop API        — http://localhost:4003
-npm run dev:service-mypsecars # MyPSECars service  — http://localhost:4004
-npm run dev:frontend          # Next.js frontend   — http://localhost:3000
+npm run dev:car_models        # Car catalogue API    — http://localhost:4001
+npm run dev:webshop           # Webshop API          — http://localhost:4003
+npm run dev:service-mypsecars # MyPSECars service    — http://localhost:4004
+npm run dev:world-drive       # World Drive service  — http://localhost:4005
+npm run dev:frontend          # Next.js frontend     — http://localhost:3000
 ```
 
 ### Service URLs
 
-| Service           | URL                      |
-|-------------------|--------------------------|
-| Frontend          | http://localhost:3000    |
-| Car Models API    | http://localhost:4001    |
-| Webshop API       | http://localhost:4003    |
-| MyPSECars Service | http://localhost:4004    |
-| MinIO Web UI      | http://localhost:9002    |
+| Service              | URL                      |
+|----------------------|--------------------------|
+| Frontend             | http://localhost:3000    |
+| Car Models API       | http://localhost:4001    |
+| Webshop API          | http://localhost:4003    |
+| MyPSECars Service    | http://localhost:4004    |
+| World Drive Service  | http://localhost:4005    |
+| MinIO Web UI         | http://localhost:9002    |
 
 
 ## Documentation
