@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import type { InteriorParts } from "./InteriorBuilder";
 
-const MODEL_PATH = "/models/car-interior/scene.gltf";
+const MODEL_PATH = "/free_lamborghini_revuelto/scene.gltf";
 
 const GLTF_DRIVER_X = -0.9;
 const GLTF_EYE_HEIGHT = 1.19;
