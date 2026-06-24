@@ -58,7 +58,7 @@ services:
       WEBSHOP_URL: "http://webshop:4003"
       NGROK_API_URL: "http://ngrok:4040"
       SERVICE_MYPSECARS_URL: "http://service-mypsecars:4004"
-      WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:${WORLD_DRIVE_PORT:-4005}"
+      WORLD_DRIVE_SERVICE_URL: "http://service-world-drive:4005"
       MQTT_BROKER_HOST: mosquitto
       MQTT_WS_PORT: "${MQTT_WS_PORT:-9001}"
     ports:
