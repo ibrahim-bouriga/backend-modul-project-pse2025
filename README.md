@@ -1,21 +1,29 @@
 # PSE 2025 – Backend Modul Project
 
+## ZIP File
+A full, ready to deploy version of the application (including the env file) is available at [Backend-Entwicklung-SoSe26-Prototyp.zip](Backend-Entwicklung-SoSe26-Prototyp.zip)
+
+## Downloading via git clone
+
 > [!Note]
 > To enable the deployment via HTTPS, we are using NGROK to tunnel our local URIs to a hosted solution. You must configure the NGROK_AUTHTOKEN environment variable in your local .env
 
-### Create .env (required)
 ```sh
 cp .env.example .env
 ```
 Don't forget to set the NGROK_AUTHTOKEN!
 
-## Deploy production ready application via docker
+## Deploy application via docker
+
+To launch MyPSECars run the following command: 
 
 ```sh
-docker compose --profile prod up --build -d
+docker compose up --build -d
 ```
 
 Builds and runs every service in containers. Use this to verify the production setup, not for day-to-day development.
+
+The Frontend is now reachable via http://localhost:3000
 
 ## Architecture
 
