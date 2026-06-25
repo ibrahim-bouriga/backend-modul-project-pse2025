@@ -23,6 +23,8 @@ docker compose up --build -d
 
 Builds and runs every service in containers. Use this to verify the production setup, not for day-to-day development.
 
+The Frontend is now reachable via http://localhost:3000
+
 ## Architecture
 
 This monorepo contains one shared frontend and multiple microservices.
