@@ -1,25 +1,12 @@
 import type { Response } from 'express';
 import type { VehicleTelemetry } from '../types';
+import { haversineMeters } from '../utils/haversine';
 
 // Zuletzt bekannte Telemetry Daten eines Autos
 const latest = new Map<string, VehicleTelemetry>();
 
 // SSE clients je Auto
 const sseClients = new Map<string, Set<Response>>();
-
-/**
- * Haversine Formel um Luftlinie zwischen 2 Punkten zu ermitteln (inkl. Erdkrümmung)
- * Wird als Fallback genutzt wenn speed = null
- */
-function haversineMeters(a: VehicleTelemetry, b: VehicleTelemetry): number {
-  const R    = 6_371_000;
-  const dLat = (b.lat - a.lat) * (Math.PI / 180);
-  const dLng = (b.lng - a.lng) * (Math.PI / 180);
-  const sin2 =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(a.lat * (Math.PI / 180)) * Math.cos(b.lat * (Math.PI / 180)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(sin2), Math.sqrt(1 - sin2));
-}
 
 // Stores telemetry and fills in missing speed via haversine if needed.
 // Returns the (possibly enriched) telemetry that was stored.
@@ -30,7 +17,7 @@ export function updateLatest(carId: string, telemetry: VehicleTelemetry): Vehicl
     if (prev) {
       const dtMs = new Date(telemetry.timestamp).getTime() - new Date(prev.timestamp).getTime();
       if (dtMs > 0) {
-        enriched = { ...telemetry, speed: haversineMeters(prev, telemetry) / (dtMs / 1000) };
+        enriched = { ...telemetry, speed: haversineMeters(prev.lat, prev.lng, telemetry.lat, telemetry.lng) / (dtMs / 1000) };
       }
     }
   }
