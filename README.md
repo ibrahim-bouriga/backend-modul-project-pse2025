@@ -18,7 +18,7 @@ Don't forget to set the NGROK_AUTHTOKEN!
 To launch MyPSECars run the following command: 
 
 ```sh
-docker compose --profile prod up --build -d
+docker compose up --build -d
 ```
 
 Builds and runs every service in containers. Use this to verify the production setup, not for day-to-day development.
