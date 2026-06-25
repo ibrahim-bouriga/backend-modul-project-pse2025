@@ -1,4 +1,5 @@
 import mqtt from 'mqtt';
+import { haversineMeters } from '../src/utils/haversine';
 
 const INTERVAL_MS        = 200;
 const SPEED_REFERENCE_MS = 1000;// OSRM waypoints designed for ~1s steps — keeps speed realistic
@@ -42,19 +43,6 @@ const CARS: CarConfig[] = [
 interface OsrmResponse {
   code: string;
   routes?: Array<{ geometry: { coordinates: Array<[number, number]> } }>;
-}
-/**
- * Berechnet die Luftdistanz in Metern nach der Haversine Formel welche die Erdkrümmung mit berücksichtigt
- * 
- */
-function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R    = 6_371_000; //Radius Erdkugel
-  const dLat = (lat2 - lat1) * (Math.PI / 180);
-  const dLng = (lng2 - lng1) * (Math.PI / 180);
-  const a    =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 /**
  * Berchnet die Straßenroute anhand der WAYPOINTS und der OSRM Libary
