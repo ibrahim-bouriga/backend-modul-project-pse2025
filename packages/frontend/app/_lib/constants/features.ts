@@ -51,11 +51,4 @@ export const FEATURES: Feature[] = [
       "Your personal vehicle dashboard. Monitor fuel level and live GPS position in real time — all data streamed directly from your car via MQTT.",
     category: "core",
   },
-  {
-    href: "/example",
-    title: "Example Feature",
-    description:
-      "Reference implementation: shows how to build a feature page and connect to the backend API.",
-    category: "example",
-  },
 ];
